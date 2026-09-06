@@ -45,15 +45,20 @@ Normalization strips `www.`, the hash, trailing slash and tracking params
 
 ## Badge reliability
 
-The pill is an ordinary content script writing into a closed shadow root — that
-is unchanged in MV3 and identical in Chrome. It can still be missing in three
-cases, two of which are now handled:
+The background script is the only component that resolves a tab's URL. It reads
+`sender.tab.url`, looks the entry up once, and drives both the toolbar ✓ and the
+in-page pill from that one answer — so the two can never disagree. The content
+script owns no state; it just draws what it's handed.
 
-- **tab opened before the extension loaded** (i.e. every tab, every time you
-  reload the temporary add-on) — the background script now injects into existing
-  http(s) tabs on install and startup.
-- **client-side navigation** (pushState / SPA routing / back-forward cache) — the
-  background script forwards URL changes so the content script re-checks.
-- **pages no extension may touch** — `about:*`, `view-source:`, the built-in PDF
-  viewer, `addons.mozilla.org`. No content script runs there and none can. The
-  toolbar ✓ is the only marker on those, by design.
+Two site behaviours the pill is built to survive:
+
+- **Trusted Types.** YouTube sends `require-trusted-types-for 'script'`, which
+  makes any `innerHTML` assignment throw — including into a shadow root. The pill
+  is built with `createElement` + `textContent` + inline `style.cssText`, so there
+  is no HTML sink and no `<style>` element for a page's `style-src` to reject.
+- **Frameworks sweeping the DOM.** The pill hangs off `<html>` (not `<body>`) and
+  a `MutationObserver` re-attaches it if a hydrating app removes it.
+
+Still impossible, by design: `about:*`, `view-source:`, the built-in PDF viewer
+and `addons.mozilla.org`. No extension may script those, so the toolbar ✓ is the
+only marker there.

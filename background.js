@@ -1,22 +1,29 @@
-// Toolbar badge + keeping content scripts alive in tabs that predate them.
+// The single source of truth for "is this tab hoarded?". Resolves the tab URL
+// once and drives both the toolbar badge and the in-page pill from that answer.
 browser.browserAction.setBadgeBackgroundColor({ color: '#16a34a' });
 browser.browserAction.setBadgeTextColor?.({ color: '#ffffff' });
 
-async function paint(tabId, url) {
-  let text = '';
-  if (hoardable(url)) {
-    const k = KEY(normalize(url));
-    if ((await browser.storage.local.get(k))[k]) text = '✓';
-  }
-  browser.browserAction.setBadgeText({ tabId, text }).catch(() => {});
+async function entryFor(url) {
+  if (!hoardable(url)) return null;
+  const k = KEY(normalize(url));
+  return (await browser.storage.local.get(k))[k] || null;
 }
 
+async function paint(tabId, url) {
+  const entry = await entryFor(url);
+  browser.browserAction.setBadgeText({ tabId, text: entry ? '✓' : '' }).catch(() => {});
+  browser.tabs.sendMessage(tabId, { show: entry }).catch(() => {});
+}
+
+// A freshly loaded content script asks what to draw. sender.tab.url — not the
+// page's own location.href, which SPAs rewrite out from under it.
+browser.runtime.onMessage.addListener((msg, sender) =>
+  msg === 'hello' ? entryFor(sender.tab?.url) : undefined
+);
+
 browser.tabs.onUpdated.addListener((tabId, ch, tab) => {
-  if (!ch.url && ch.status !== 'complete') return;
-  paint(tabId, tab.url);
-  // pushState/replaceState navigations fire onUpdated with a url but no reload,
-  // so the content script has to re-check the store itself.
-  if (ch.url) browser.tabs.sendMessage(tabId, 'sync').catch(() => {});
+  // ch.url alone covers pushState/replaceState; status covers real loads.
+  if (ch.url || ch.status === 'complete') paint(tabId, tab.url);
 });
 
 browser.tabs.onActivated.addListener(({ tabId }) =>
@@ -29,18 +36,15 @@ browser.storage.onChanged.addListener(async changes => {
   }
 });
 
-// Content scripts only inject into pages loaded *after* install. Tabs that were
-// already open (every tab, after a temporary-addon reload) get no badge until
-// reloaded — so inject into them by hand.
+// Content scripts only inject into pages loaded after the extension. Tabs open
+// before that (all of them, after a temporary-addon reload) need a hand.
 async function adopt() {
   for (const t of await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] })) {
-    browser.tabs.sendMessage(t.id, 'ping').catch(() =>
-      browser.tabs
-        .executeScript(t.id, { file: 'lib.js' })
-        .then(() => browser.tabs.executeScript(t.id, { file: 'content.js' }))
-        .catch(() => {}) // about:, view-source:, PDF viewer, AMO — no script allowed
-    );
-    paint(t.id, t.url);
+    browser.tabs
+      .sendMessage(t.id, 'ping')
+      .then(() => paint(t.id, t.url))
+      // about:, view-source:, PDF viewer, AMO — no script allowed, badge only.
+      .catch(() => browser.tabs.executeScript(t.id, { file: 'content.js' }).catch(() => {}));
   }
 }
 browser.runtime.onInstalled.addListener(adopt);

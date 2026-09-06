@@ -1,56 +1,52 @@
-// Badge on the page itself + meta scraper for the popup.
-// Wrapped so a re-injection into an already-injected tab is a harmless no-op.
+// Dumb renderer. The background script decides what (if anything) to show —
+// it is the only place a tab's URL is resolved, so the pill can never disagree
+// with the toolbar badge. No storage access, no URL parsing, no lib.js.
 (() => {
-  let key, host, pill;
+  let host, pill;
 
-  const meta = s => document.querySelector(s)?.content?.trim() || '';
-
-  browser.runtime.onMessage.addListener(msg => {
-    if (msg === 'ping') return Promise.resolve(true);
-    if (msg === 'sync') { sync(); return; }
-    if (msg === 'meta')
-      return Promise.resolve({
-        title: document.title || '',
-        description:
-          meta('meta[name="description" i]') ||
-          meta('meta[property="og:description" i]') ||
-          meta('meta[name="twitter:description" i]')
-      });
-  });
+  const PILL = 'display:block;font:500 11px/1 ui-sans-serif,system-ui,sans-serif;' +
+    'color:#e7f6ec;background:#14532d;border:1px solid #16a34a;border-radius:999px;' +
+    'padding:5px 9px;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;' +
+    'opacity:.85;user-select:none';
 
   function render(entry) {
-    if (!entry) {
-      host?.remove();
-      host = pill = null;
-      return;
-    }
+    if (!entry) { host?.remove(); host = pill = null; return; }
     if (!host) {
       host = document.createElement('div');
       host.style.cssText = 'all:initial;position:fixed;left:12px;bottom:12px;z-index:2147483647';
-      const root = host.attachShadow({ mode: 'closed' });
-      root.innerHTML =
-        `<style>
-          b{display:block;font:500 11px/1 ui-sans-serif,system-ui,sans-serif;color:#e7f6ec;
-            background:#14532d;border:1px solid #16a34a;border-radius:999px;
-            padding:5px 9px;box-shadow:0 2px 8px rgba(0,0,0,.35);
-            white-space:nowrap;opacity:.85;user-select:none}
-          b:hover{opacity:1}
-         </style><b></b>`;
-      pill = root.querySelector('b');
+      // createElement + textContent, never innerHTML: YouTube (and any site with
+      // `require-trusted-types-for 'script'`) throws on innerHTML, and an inline
+      // <style> element would additionally be at the mercy of the page's style-src.
+      pill = document.createElement('b');
+      pill.style.cssText = PILL;
+      host.attachShadow({ mode: 'closed' }).appendChild(pill);
     }
-    // Re-attach if the page wiped it, and hang off <html> rather than <body>
-    // so frameworks that rebuild the body don't take it with them.
     if (!host.isConnected) document.documentElement.appendChild(host);
     pill.textContent = '✦ hoarded' + (entry.tags?.length ? ' · ' + entry.tags.join(' · ') : '');
     pill.title = entry.note || '';
   }
 
-  async function sync() {
-    key = KEY(normalize(location.href));
-    render((await browser.storage.local.get(key))[key]);
-  }
+  browser.runtime.onMessage.addListener(msg => {
+    if (msg === 'ping') return Promise.resolve(true);
+    if (msg === 'meta') {
+      const m = s => document.querySelector(s)?.content?.trim() || '';
+      return Promise.resolve({
+        title: document.title || '',
+        description:
+          m('meta[name="description" i]') ||
+          m('meta[property="og:description" i]') ||
+          m('meta[name="twitter:description" i]')
+      });
+    }
+    if (msg && 'show' in msg) render(msg.show);
+  });
 
-  browser.storage.onChanged.addListener(ch => key in ch && render(ch[key].newValue));
-  addEventListener('pageshow', e => e.persisted && sync()); // back/forward cache
-  sync();
+  const hello = () => browser.runtime.sendMessage('hello').then(e => render(e || null), () => {});
+  hello();
+  addEventListener('pageshow', e => e.persisted && hello()); // back/forward cache
+
+  // Some frameworks sweep unexpected children of <html> on hydrate.
+  new MutationObserver(() => {
+    if (host && !host.isConnected) document.documentElement.appendChild(host);
+  }).observe(document.documentElement, { childList: true });
 })();
