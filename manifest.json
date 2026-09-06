@@ -50,7 +50,7 @@
         "default": "Ctrl+Shift+U",
         "mac": "MacCtrl+Shift+U"
       },
-      "description": "Hoard the current tab"
+      "description": "Open the Tab Hoardr menu"
     }
   },
   "options_ui": {

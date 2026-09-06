@@ -11,17 +11,24 @@ addons.mozilla.org, or use Zen/Firefox Developer Edition with
 
 ## Use
 
-- **Ctrl+Shift+U** (Mac: **Control+Shift+U**) — saves the active tab instantly
-  (url, title, meta description), then the popup opens for an optional note +
-  tags. Enter closes it.
-  Rebind it from the popup's **shortcut** link, or `about:addons` → gear →
-  Manage Extension Shortcuts. If a combination does nothing, the browser or
-  another add-on already owns it — the settings page can't detect that, pick another.
+- Click the toolbar icon (or **Ctrl+Shift+U**, Mac: **Control+Shift+U**) to open
+  the menu: a big badge for the current tab's state — *not saved* / *saved* /
+  *hoarded* — then **Save current tab**, **Export saved tabs**, **Close hoarded
+  tabs**, **Options**, and a count of what's ready to export. Nothing is saved
+  until you press Save.
+- **Save current tab** grabs url, title and meta description, then opens the
+  editor: title, description, note, tags — all editable. Enter closes it,
+  **← menu** goes back.
+  Rebind the shortcut in **Options**, or `about:addons` → gear → Manage Extension
+  Shortcuts. If a combination does nothing, the browser or another add-on already
+  owns it — the settings page can't detect that, pick another.
 - Already-saved pages show a green **✦ hoarded** pill bottom-left, plus a ✓ on the
-  toolbar icon. Pressing the shortcut again edits instead of duplicating.
-- **keep tab on export** = pinned, that tab survives the post-export cleanup.
-- **Export** → `YYYYMMDD-HHmm_hoardr-session.json` in Downloads, then offers to
-  close every exported non-pinned tab.
+  toolbar icon.
+- **keep tab on export** = pinned, that tab survives **Close hoarded tabs**.
+- **Export saved tabs** → `YYYYMMDD-HHmm_hoardr-session.json` in Downloads.
+  **Close hoarded tabs** is a permanent menu entry — active whenever an exported,
+  non-pinned tab is open, not just right after an export. It asks first: the
+  button turns into *Really close N?* and you click it again to confirm.
 
 ## Export shape
 
