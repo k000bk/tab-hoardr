@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Tab Hoardr</title>
+<style>
+  :root { color-scheme: dark }
+  body { margin: 0; padding: 28px; font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+         background: #16181d; color: #e6e8ea }
+  main { max-width: 460px }
+  h1 { font-size: 15px; margin: 0 0 20px }
+  label { display: block; font-size: 12px; color: #9aa4ae; margin-bottom: 6px }
+  #rec { width: 100%; box-sizing: border-box; background: #0e1014; color: inherit;
+         border: 1px solid #2c3038; border-radius: 6px; padding: 10px 12px;
+         font: 500 14px ui-monospace, monospace; text-align: center; cursor: pointer }
+  #rec:focus { outline: none; border-color: #16a34a; background: #0b1f13 }
+  .row { display: flex; gap: 8px; margin-top: 10px; align-items: center }
+  button { font: inherit; font-size: 12px; border: 1px solid #2c3038; background: #21262d;
+           color: #e6e8ea; border-radius: 6px; padding: 5px 10px; cursor: pointer }
+  button:hover { border-color: #3d444d }
+  #msg { font-size: 12px; color: #9aa4ae; flex: 1 }
+  #msg.err { color: #f87171 }
+  #msg.ok { color: #4ade80 }
+  p.hint { font-size: 12px; color: #6e7781; margin-top: 22px }
+</style>
+
+<main>
+  <h1>Tab Hoardr</h1>
+  <label for="rec">Shortcut to hoard the active tab</label>
+  <input id="rec" readonly value="…">
+  <div class="row">
+    <span id="msg">Click the field, then press the combination.</span>
+    <button id="reset">Reset to default</button>
+  </div>
+  <p class="hint">
+    Needs Ctrl, Alt or Cmd (or a function key). If a combination silently does
+    nothing, the browser or another extension already owns it — pick another.
+  </p>
+</main>
+<script src="options.js"></script>
