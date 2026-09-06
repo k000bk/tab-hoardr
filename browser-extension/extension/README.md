@@ -100,6 +100,17 @@ owns it — the settings page can't detect that, pick another.
   non-pinned tab is open, not just right after an export. It asks first: the
   button turns into *Really close N?* and you click it again to confirm.
 
+## Update check
+
+The popup asks GitHub for the latest release tag and compares it with the
+manifest version; a newer tag shows an **Update available** pill in the popup
+header, linking to the release page. The verdict is cached in
+`storage.local.updateCheck` and refreshed at most once a week, so opening the
+popup a hundred times a day is still one anonymous request per week — well
+inside GitHub's 60/h unauthenticated limit. Nothing but the request itself
+leaves the browser; a failure (offline, rate limit) just leaves the pill hidden.
+Options → Creator → **Check for updates** forces a fresh check.
+
 ## Export shape
 
 ```json
@@ -124,7 +135,7 @@ indexed get — no full-blob rewrite on every save, no IndexedDB schema to maint
 Normalization strips `www.`, the hash, trailing slash and tracking params
 (`utm_*`, `fbclid`, …) so the same page saved twice is one entry.
 
-`node test.js` covers normalization and state.
+`node test.js` covers normalization, entry state and the version compare.
 
 ## Badge reliability
 

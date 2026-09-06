@@ -25,10 +25,10 @@
     .setting-actions { display: flex; align-items: center; gap: 8px; }
     #rec { width: 160px; height: 30px; padding: 0 9px; border: 1px solid var(--border); border-radius: var(--radius-s); outline: none; background: var(--background-primary); box-shadow: var(--input-shadow); color: var(--text-normal); font: 500 12px/1 var(--font-mono); text-align: center; cursor: pointer; }
     #rec.listening { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); color: var(--accent-hover); }
-    #msg { max-width: 650px; margin-top: 8px; color: var(--text-muted); font-size: 12px; }
+    #msg, #upd { max-width: 650px; margin-top: 8px; color: var(--text-muted); font-size: 12px; }
     #msg.listening { color: var(--accent-hover); }
-    #msg.ok { color: var(--green); }
-    #msg.err { color: var(--red); }
+    #msg.ok, #upd.ok { color: var(--green); }
+    #msg.err, #upd.err { color: var(--red); }
     @media (max-width: 620px) {
       .settings-shell { grid-template-columns: 1fr; }
       .settings-sidebar { display: none; }
@@ -62,10 +62,16 @@
           <div><div class="setting-name">Tab Hoardr</div><div class="setting-description">Source code, new versions and a place to report a problem.</div></div>
           <div class="setting-actions"><a class="button" href="https://github.com/k000bk/tab-hoardr" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="icons.svg#link"></use></svg>k000bk on GitHub</a></div>
         </div>
+        <div class="setting-row">
+          <div><div class="setting-name">Version <span id="ver"></span></div><div class="setting-description">Ask GitHub whether a newer release has been published.</div></div>
+          <div class="setting-actions"><button id="check" type="button">Check for updates</button></div>
+        </div>
       </div>
+      <div id="upd" role="status" aria-live="polite"></div>
     </section>
   </main>
   <script src="compat.js"></script>
+  <script src="lib.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

@@ -66,6 +66,7 @@ async function refresh() {
 
 $('save').addEventListener('click', () => {
   const f = $('editor');
+  // Starting height only; editor.js re-fits once its fields are filled.
   f.onload = () => {
     f.style.height = f.contentDocument.documentElement.scrollHeight + 'px';
     f.contentWindow.focus();
@@ -79,6 +80,15 @@ $('forget').addEventListener('click', async () => {
   await refresh();
 });
 $('prefs').addEventListener('click', () => browser.runtime.openOptionsPage());
+
+// Weekly, cached, off the critical path — a failure (offline, rate limit) just
+// leaves the pill hidden.
+checkUpdate().then(u => {
+  if (!u.newer) return;
+  $('update').href = RELEASES_URL;
+  $('update').title = `Version ${u.latest} is available — you have ${u.version}`;
+  $('update').hidden = false;
+}).catch(() => {});
 
 // Two-click confirm. window.confirm() from a browser_action popup can dismiss
 // the popup itself, taking the pending click with it.

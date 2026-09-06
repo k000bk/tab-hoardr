@@ -88,3 +88,31 @@ if (!browser.commands.update) {
     }
   });
 }
+
+// --- Update check -----------------------------------------------------------
+const version = browser.runtime.getManifest().version;
+const upd = document.getElementById('upd');
+const check = document.getElementById('check');
+document.getElementById('ver').textContent = version;
+
+const tell = (text, cls = '') => { upd.textContent = text; upd.className = cls; };
+
+check.addEventListener('click', async () => {
+  check.disabled = true;
+  tell('Checking GitHub…');
+  try {
+    const { latest, newer } = await checkUpdate(true);
+    if (!newer) return tell(`Up to date — ${version} is the latest release.`, 'ok');
+    tell(`Version ${latest} is available — `, 'ok');
+    const a = document.createElement('a');
+    a.href = RELEASES_URL;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = 'open the release page';
+    upd.append(a);
+  } catch (err) {
+    tell(err.message || String(err), 'err');
+  } finally {
+    check.disabled = false;
+  }
+});

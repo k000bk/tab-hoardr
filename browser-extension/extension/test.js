@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { normalize, state } = require('./lib.js');
+const { normalize, state, isNewer } = require('./lib.js');
 
 const same = (a, b) => assert.strictEqual(normalize(a), normalize(b), `${a} !== ${b}`);
 
@@ -25,5 +25,11 @@ assert.strictEqual(normalize('https://app.com/#/inbox'), 'https://app.com/#/inbo
 assert.strictEqual(state({ exportedAt: null, updatedAt: 5 }), 'new');
 assert.strictEqual(state({ exportedAt: 10, updatedAt: 5 }), 'clean');
 assert.strictEqual(state({ exportedAt: 10, updatedAt: 20 }), 'update');
+
+assert.ok(isNewer('0.3.0', '0.2.0'));
+assert.ok(isNewer('0.2.10', '0.2.9'));   // not a string compare
+assert.ok(isNewer('1.0', '0.9.9'));      // missing parts are 0
+assert.ok(!isNewer('0.2.0', '0.2.0'));
+assert.ok(!isNewer('0.1.9', '0.2.0'));
 
 console.log('ok');

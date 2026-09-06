@@ -8,11 +8,14 @@ let key, entry;
 
 if (top !== window) document.body.classList.add('embedded');
 
-// Fit the window to the form so the buttons are never cut off. The title bar is
-// measured, not guessed: it is not the same height in Chrome as in Firefox, and
-// the fields grow with the interface font.
+// Fit to the form so the buttons are never cut off — called once the fields are
+// filled, because an empty #host is 0px tall and a filled one is a line of text.
+// Same origin, so embedded in the toolbar panel this sizes the iframe directly;
+// popup.js only sets a starting height, before this page has its content.
 async function fit() {
-  if (top !== window) return; // the menu's iframe sizes itself, in popup.js
+  if (top !== window) { frameElement.style.height = document.documentElement.scrollHeight + 'px'; return; }
+  // Standalone: the title bar is measured, not guessed — it is not the same
+  // height in Chrome as in Firefox, and the fields grow with the interface font.
   const wanted = document.documentElement.scrollHeight + (outerHeight - innerHeight);
   if (Math.abs(wanted - outerHeight) < 3) return;
   const win = await browser.windows.getCurrent();
