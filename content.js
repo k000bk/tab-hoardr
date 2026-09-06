@@ -4,10 +4,10 @@
 (() => {
   let host, pill;
 
-  const PILL = 'display:block;font:500 11px/1 ui-sans-serif,system-ui,sans-serif;' +
-    'color:#e7f6ec;background:#14532d;border:1px solid #16a34a;border-radius:999px;' +
-    'padding:5px 9px;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;' +
-    'opacity:.85;user-select:none';
+  const PILL = 'display:block;font:600 11px/1 ui-sans-serif,system-ui,sans-serif;' +
+    'color:#f0eaff;background:rgba(59,36,86,.94);border:1px solid #b69cf6;border-radius:999px;' +
+    'padding:6px 9px;box-shadow:0 2px 8px rgba(0,0,0,.35);white-space:nowrap;' +
+    'user-select:none';
 
   function render(entry) {
     if (!entry) { host?.remove(); host = pill = null; return; }

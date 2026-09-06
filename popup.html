@@ -1,38 +1,40 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<link rel="stylesheet" href="ui.css">
-<style>
-  body { width: 320px; padding: 0 }
-  #menu { padding: 12px }
-  /* The editor is editor.html itself, so the panel and the standalone window
-     stay one implementation. Auto-height is set on load. */
-  #editor { width: 320px; border: 0 }
-  #editor:not([hidden]) { display: block }
-  #badge {
-    display: block; text-align: center; font-size: 15px; font-weight: 600;
-    letter-spacing: .04em; padding: 12px; border-radius: 8px; margin-bottom: 8px;
-    background: #21262d; color: #9aa4ae; border: 1px solid #2c3038;
-  }
-  #badge.saved { background: #14532d; color: #86efac; border-color: #16a34a }
-  #badge.hoarded { background: #422006; color: #fcd34d; border-color: #a16207 }
-  .menu { display: flex; flex-direction: column; gap: 6px; margin-top: 12px }
-  .menu button { text-align: left }
-  .menu button[hidden] { display: none }
-  #status { flex: 1; font-size: 11px; color: #9aa4ae }
-</style>
-
-<div id="menu">
-<div id="badge">…</div>
-<div class="host" id="host"></div>
-<div class="menu">
-  <button class="go" id="save">Save current tab</button>
-  <button id="forget" hidden>Forget saved tab</button>
-  <button id="export">Export saved tabs</button>
-  <button id="closeHoarded">Close hoarded tabs</button>
-  <button id="prefs">Options</button>
-</div>
-<footer><span id="status"></span></footer>
-</div>
-<iframe id="editor" hidden></iframe>
-<script src="lib.js"></script>
-<script src="popup.js"></script>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <title>Tab Hoardr</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body { width: 350px; padding: 0; }
+    #menu { padding: 12px; }
+    .menu-stack { display: flex; flex-direction: column; gap: 6px; }
+    .menu-stack button { width: 100%; }
+    #editor { display: block; width: 350px; border: 0; }
+  </style>
+</head>
+<body>
+  <main id="menu">
+    <header class="app-head">
+      <span class="app-logo" aria-hidden="true"><svg class="icon"><use href="icons.svg#stack"></use></svg></span>
+      <div><div class="app-title">Tab Hoardr</div><div class="app-context">Current tab</div></div>
+    </header>
+    <section class="status-card" id="badge" aria-live="polite">
+      <span class="status-icon" aria-hidden="true"><svg class="icon"><use id="statusIcon" href="icons.svg#plus"></use></svg></span>
+      <div><strong id="statusTitle">Loading…</strong><span class="status-detail" id="statusDetail">Checking this page.</span></div>
+    </section>
+    <div class="host" id="host"></div>
+    <div class="menu-stack">
+      <button class="go" id="save" type="button"><svg class="icon" aria-hidden="true"><use id="saveIcon" href="icons.svg#plus"></use></svg><span id="saveLabel">Save current tab</span></button>
+      <button id="forget" type="button" hidden><svg class="icon" aria-hidden="true"><use href="icons.svg#trash"></use></svg>Forget saved tab</button>
+      <button id="export" type="button"><svg class="icon" aria-hidden="true"><use href="icons.svg#download"></use></svg>Export saved tabs</button>
+      <button id="closeHoarded" type="button"><svg class="icon" aria-hidden="true"><use id="closeIcon" href="icons.svg#x"></use></svg><span id="closeLabel">Close hoarded tabs</span></button>
+      <button id="prefs" type="button"><svg class="icon" aria-hidden="true"><use href="icons.svg#settings"></use></svg>Options</button>
+    </div>
+    <footer><span class="footer-status" id="status" role="status" aria-live="polite"></span></footer>
+  </main>
+  <iframe id="editor" title="Tab editor" hidden></iframe>
+  <script src="lib.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

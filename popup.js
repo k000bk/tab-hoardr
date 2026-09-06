@@ -3,6 +3,14 @@
 const $ = id => document.getElementById(id);
 let tab, key, entry, hoardedTabs = [];
 
+const icon = (id, name) => $(id).setAttribute('href', `icons.svg#${name}`);
+const feedback = (text, kind = '') => {
+  $('status').textContent = text;
+  $('status').setAttribute('aria-busy', kind === 'progress' ? 'true' : 'false');
+  if (kind) $('status').dataset.state = kind;
+  else delete $('status').dataset.state;
+};
+
 const all = async () =>
   Object.entries(await browser.storage.local.get(null))
     .filter(([k]) => k.startsWith('t:'))
@@ -12,11 +20,20 @@ const all = async () =>
 async function refresh() {
   entry = key ? (await browser.storage.local.get(key))[key] : undefined;
 
-  const label = !key ? "can't hoard" : !entry ? 'not saved'
+  const label = !key ? 'unavailable' : !entry ? 'not-saved'
     : state(entry) === 'clean' ? 'hoarded' : 'saved';
-  $('badge').textContent = label;
-  $('badge').className = label === 'saved' ? 'saved' : label === 'hoarded' ? 'hoarded' : '';
-  $('save').textContent = entry ? 'Edit saved tab' : 'Save current tab';
+  const card = {
+    unavailable: ['Can’t save this page', 'The browser does not allow access here.', 'ban'],
+    'not-saved': ['Not saved', 'Ready to add to your next export.', 'plus'],
+    saved: ['Saved', 'Changes are waiting for export.', 'check'],
+    hoarded: ['Hoarded', 'Exported and safe to close.', 'archive']
+  }[label];
+  $('badge').className = `status-card ${label === 'not-saved' ? '' : label}`.trim();
+  $('statusTitle').textContent = card[0];
+  $('statusDetail').textContent = card[1];
+  icon('statusIcon', card[2]);
+  $('saveLabel').textContent = entry ? 'Edit saved tab' : 'Save current tab';
+  icon('saveIcon', entry ? 'edit' : 'plus');
   $('save').disabled = !key;
   $('forget').hidden = !entry;
 
@@ -24,22 +41,26 @@ async function refresh() {
   const pending = entries.filter(e => state(e) !== 'clean');
   $('export').disabled = !pending.length;
 
-  // Exported and not flagged "keep tab on export" — closing loses nothing.
-  const done = new Set(entries.filter(e => e.exportedAt && !e.pinned).map(e => e.normUrl));
+  // Fully exported and not flagged "keep tab on export" — safe to close.
+  // An entry edited after export is Saved again, not Hoarded.
+  const done = new Set(entries.filter(e => state(e) === 'clean' && !e.pinned).map(e => e.normUrl));
   hoardedTabs = (await browser.tabs.query({}))
     .filter(t => !t.pinned && t.url && done.has(normalize(t.url)));
   $('closeHoarded').disabled = !hoardedTabs.length;
-  $('closeHoarded').textContent = hoardedTabs.length
+  $('closeLabel').textContent = hoardedTabs.length
     ? `Close ${hoardedTabs.length} hoarded tab${hoardedTabs.length > 1 ? 's' : ''}`
     : 'Close hoarded tabs';
+  $('closeHoarded').classList.remove('danger');
+  icon('closeIcon', 'x');
 
-  $('status').textContent = pending.length ? `${pending.length} ready to export` : 'nothing new';
+  feedback(pending.length ? `${pending.length} ready to export` : 'Nothing new');
 }
 
 (async () => {
   [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab && hoardable(tab.url)) key = KEY(normalize(tab.url));
   $('host').textContent = key ? normalize(tab.url) : tab?.url || '';
+  $('host').title = $('host').textContent;
   await refresh();
 })();
 
@@ -65,7 +86,10 @@ let armed = false;
 $('closeHoarded').addEventListener('click', async () => {
   if (!armed) {
     armed = true;
-    $('closeHoarded').textContent = `Really close ${hoardedTabs.length}?`;
+    $('closeLabel').textContent = `Really close ${hoardedTabs.length}?`;
+    $('closeHoarded').classList.add('danger');
+    icon('closeIcon', 'alert');
+    feedback('Click again to confirm', 'warning');
     setTimeout(() => { if (armed) { armed = false; refresh(); } }, 3000);
     return;
   }
@@ -88,7 +112,7 @@ $('export').addEventListener('click', async () => {
   const btn = $('export');
   btn.disabled = true;
   const pending = (await all()).filter(e => state(e) !== 'clean');
-  if (!pending.length) return refresh();
+  if (!pending.length) { await refresh(); feedback('Nothing new to export'); return; }
 
   const stamp = new Date();
   const p = n => String(n).padStart(2, '0');
@@ -111,14 +135,20 @@ $('export').addEventListener('click', async () => {
   };
 
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
-  $('status').textContent = 'exporting…';
-  const id = await browser.downloads.download({ url, filename: name, saveAs: false });
-  if (!(await settled(id))) { $('status').textContent = 'download failed'; btn.disabled = false; return; }
-
-  const stampMs = Date.now();
-  await browser.storage.local.set(
-    Object.fromEntries(pending.map(e => [KEY(e.normUrl), { ...e, exportedAt: stampMs }]))
-  );
-  await refresh();
-  $('status').textContent = `exported ${pending.length}`;
+  feedback(`Exporting ${pending.length} saved tab${pending.length > 1 ? 's' : ''}…`, 'progress');
+  try {
+    const id = await browser.downloads.download({ url, filename: name, saveAs: false });
+    if (!(await settled(id))) throw new Error('Download failed');
+    const stampMs = Date.now();
+    await browser.storage.local.set(
+      Object.fromEntries(pending.map(e => [KEY(e.normUrl), { ...e, exportedAt: stampMs }]))
+    );
+    await refresh();
+    feedback(`Exported ${pending.length} saved tab${pending.length > 1 ? 's' : ''}`, 'success');
+  } catch {
+    feedback('Download failed. Try again.', 'error');
+    btn.disabled = false;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 });

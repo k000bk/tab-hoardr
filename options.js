@@ -3,10 +3,15 @@ const rec = document.getElementById('rec');
 const msg = document.getElementById('msg');
 
 const say = (text, cls = '') => { msg.textContent = text; msg.className = cls; };
+const displayShortcut = shortcut => {
+  if (!navigator.platform.startsWith('Mac')) return shortcut;
+  const symbols = { MacCtrl: '⌃', Command: '⌘', Alt: '⌥', Shift: '⇧' };
+  return shortcut.split('+').map(part => symbols[part] || part).join(' ');
+};
 
 const show = async () => {
   const cmd = (await browser.commands.getAll()).find(c => c.name === NAME);
-  rec.value = cmd?.shortcut || 'not set';
+  rec.value = cmd?.shortcut ? displayShortcut(cmd.shortcut) : 'Not set';
 };
 show();
 
@@ -37,8 +42,16 @@ function toShortcut(e) {
   return [...mods, key].join('+');
 }
 
-rec.addEventListener('focus', () => say('Listening… press the combination.'));
-rec.addEventListener('blur', () => { show(); say('Click the field, then press the combination.'); });
+rec.addEventListener('focus', () => {
+  rec.classList.add('listening');
+  rec.value = 'Listening…';
+  say('Press the new key combination. Escape cancels.', 'listening');
+});
+rec.addEventListener('blur', () => {
+  rec.classList.remove('listening');
+  show();
+  say('Needs Control, Alt or Command, or a function key.');
+});
 
 rec.addEventListener('keydown', async e => {
   e.preventDefault();
@@ -47,7 +60,8 @@ rec.addEventListener('keydown', async e => {
   if (!shortcut) return say('Needs Ctrl, Alt or Cmd plus a letter, digit or arrow.', 'err');
   try {
     await browser.commands.update({ name: NAME, shortcut });
-    rec.value = shortcut;
+    rec.value = displayShortcut(shortcut);
+    rec.classList.remove('listening');
     say(`Saved — ${shortcut}`, 'ok');
   } catch (err) {
     say(String(err.message || err), 'err');
@@ -55,7 +69,11 @@ rec.addEventListener('keydown', async e => {
 });
 
 document.getElementById('reset').addEventListener('click', async () => {
-  await browser.commands.reset(NAME);
-  await show();
-  say(`Reset — ${rec.value}`, 'ok');
+  try {
+    await browser.commands.reset(NAME);
+    await show();
+    say(`Reset — ${rec.value}`, 'ok');
+  } catch (err) {
+    say(String(err.message || err), 'err');
+  }
 });

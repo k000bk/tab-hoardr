@@ -1,26 +1,29 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>Tab Hoardr</title>
-<link rel="stylesheet" href="ui.css">
-<style>
-  body { padding: 12px }
-  #title { font-weight: 600 }
-  #description { min-height: 48px }
-  #note { min-height: 76px }
-</style>
-
-<input type="text" id="title" placeholder="title">
-<div class="host" id="host"></div>
-<textarea id="description" placeholder="description…"></textarea>
-<textarea id="note" placeholder="note…" autofocus></textarea>
-<input type="text" id="tags" placeholder="tags, comma separated">
-<div class="row">
-  <label><input type="checkbox" id="pinned"> keep tab on export</label>
-</div>
-<footer>
-  <span style="flex:1;font-size:11px;color:#6e7781">Esc closes</span>
-  <button id="forget">Forget</button>
-  <button class="go" id="save">Save</button>
-</footer>
-<script src="lib.js"></script>
-<script src="editor.js"></script>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <title>Tab Hoardr</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <header class="editor-toolbar">
+    <span class="editor-toolbar-title"><svg class="icon" aria-hidden="true"><use href="icons.svg#stack"></use></svg><span id="editorHeading">Save current tab</span></span>
+    <button class="icon-button" id="closeEditor" type="button" aria-label="Close editor"><svg class="icon" aria-hidden="true"><use href="icons.svg#x"></use></svg></button>
+  </header>
+  <main class="editor-surface" id="editorForm">
+    <div class="field"><label class="field-label" for="title"><span>Title</span></label><input class="title-input" type="text" id="title" placeholder="Page title" autocomplete="off"></div>
+    <div class="host" id="host"></div>
+    <div class="field"><label class="field-label" for="description"><span>Description</span><span>From page</span></label><textarea id="description" placeholder="Page description"></textarea></div>
+    <div class="field"><label class="field-label" for="note"><span>Note</span><span>Optional</span></label><textarea class="note-field" id="note" placeholder="Add context for your future self…" autofocus></textarea></div>
+    <div class="field"><label class="field-label" for="tags"><span>Tags</span><span>Comma separated</span></label><input type="text" id="tags" placeholder="productivity, browser" autocomplete="off"></div>
+    <label class="checkbox-row"><input type="checkbox" id="pinned">Keep tab open after export</label>
+    <footer><span class="kbd-hint">Esc closes</span><button id="forget" type="button">Forget</button><button class="go" id="save" type="button">Save</button></footer>
+  </main>
+  <main class="unavailable-message" id="fallback" hidden>
+    <div><span class="status-icon" aria-hidden="true"><svg class="icon"><use href="icons.svg#ban"></use></svg></span><strong>Can’t save this page</strong><p>The tab is no longer open, or the browser does not allow extensions to access it.</p></div>
+  </main>
+  <script src="lib.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>

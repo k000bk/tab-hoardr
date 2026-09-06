@@ -6,17 +6,21 @@ const $ = id => document.getElementById(id);
 const now = () => Date.now();
 let key, entry;
 
+if (top !== window) document.body.classList.add('embedded');
+
 (async () => {
   const tabId = Number(new URLSearchParams(location.search).get('tab'));
   const tab = await browser.tabs.get(tabId).catch(() => null);
   if (!tab || !hoardable(tab.url)) {
-    document.body.textContent = "Can't hoard this page.";
+    $('editorForm').hidden = true;
+    $('fallback').hidden = false;
     return;
   }
 
   key = KEY(normalize(tab.url));
   entry = (await browser.storage.local.get(key))[key];
-  if (!entry) {
+  const existing = Boolean(entry);
+  if (!existing) {
     const meta = await browser.tabs.sendMessage(tab.id, 'meta').catch(() => ({}));
     entry = {
       url: tab.url,
@@ -35,15 +39,18 @@ let key, entry;
 
   $('title').value = entry.title;
   $('host').textContent = entry.normUrl;
+  $('host').title = entry.normUrl;
   $('description').value = entry.description;
   $('note').value = entry.note;
   $('tags').value = entry.tags.join(', ');
   $('pinned').checked = entry.pinned;
+  $('editorHeading').textContent = existing ? 'Edit saved tab' : 'Save current tab';
   $('note').focus();
 })();
 
 let t;
 const patch = () => {
+  if (!entry || !key) return;
   clearTimeout(t);
   t = setTimeout(async () => {
     entry.title = $('title').value.trim();
@@ -61,6 +68,7 @@ for (const el of ['title', 'description', 'note', 'tags', 'pinned']) $(el).addEv
 // a standalone window top === window and it closes that.
 const close = () => { patch(); setTimeout(() => top.close(), 200); };
 $('save').addEventListener('click', close);
+$('closeEditor').addEventListener('click', close);
 $('forget').addEventListener('click', async () => {
   await browser.storage.local.remove(key);
   top.close();

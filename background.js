@@ -1,6 +1,6 @@
-// The single source of truth for "is this tab hoarded?". Resolves the tab URL
-// once and drives both the toolbar badge and the in-page pill from that answer.
-browser.browserAction.setBadgeBackgroundColor({ color: '#16a34a' });
+// Resolve the tab URL once. The badge marks any saved entry; the page pill is
+// reserved for fully exported entries, where "hoarded" means safe to close.
+browser.browserAction.setBadgeBackgroundColor({ color: '#9b6df2' });
 browser.browserAction.setBadgeTextColor?.({ color: '#ffffff' });
 
 async function entryFor(url) {
@@ -12,13 +12,14 @@ async function entryFor(url) {
 async function paint(tabId, url) {
   const entry = await entryFor(url);
   browser.browserAction.setBadgeText({ tabId, text: entry ? '✓' : '' }).catch(() => {});
-  browser.tabs.sendMessage(tabId, { show: entry }).catch(() => {});
+  const hoarded = entry && state(entry) === 'clean' ? entry : null;
+  browser.tabs.sendMessage(tabId, { show: hoarded }).catch(() => {});
 }
 
 // --- editor window ---------------------------------------------------------
 // A standalone window, not a browser_action popup: centred on the browser window
 // and immune to focus loss. Opened by the keyboard shortcut and by the menu.
-const EDITOR = { w: 400, h: 400 };
+const EDITOR = { w: 400, h: 450 };
 let editorWin = null;
 
 async function openEditor(tabId) {
@@ -46,7 +47,9 @@ browser.commands.onCommand.addListener(async name => {
 // A freshly loaded content script asks what to draw. sender.tab.url — not the
 // page's own location.href, which SPAs rewrite out from under it.
 browser.runtime.onMessage.addListener((msg, sender) =>
-  msg === 'hello' ? entryFor(sender.tab?.url) : undefined
+  msg === 'hello'
+    ? entryFor(sender.tab?.url).then(entry => entry && state(entry) === 'clean' ? entry : null)
+    : undefined
 );
 
 browser.tabs.onUpdated.addListener((tabId, ch, tab) => {
