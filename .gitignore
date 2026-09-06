@@ -2,3 +2,7 @@
 *.xpi
 web-ext-artifacts/
 .amo-upload-uuid
+# Private notes on project
+PRIVATE.md
+# Agents
+AGENTS.md
