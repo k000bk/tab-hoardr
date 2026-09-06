@@ -1,5 +1,5 @@
-// Toolbar menu. Saves nothing itself — "Save current tab" hands off to the
-// background script, which owns the editor window.
+// Toolbar menu. "Save current tab" hands off to the background script, which
+// owns the editor window; the bulk save writes storage here and now.
 const $ = id => document.getElementById(id);
 let tab, key, entry, hoardedTabs = [];
 
@@ -11,14 +11,15 @@ const feedback = (text, kind = '') => {
   else delete $('status').dataset.state;
 };
 
-const all = async () =>
-  Object.entries(await browser.storage.local.get(null))
+const all = async (store) =>
+  Object.entries(store ?? await browser.storage.local.get(null))
     .filter(([k]) => k.startsWith('t:'))
     .map(([, v]) => v);
 
 // Single source of truth for every label and disabled state in the menu.
 async function refresh() {
-  entry = key ? (await browser.storage.local.get(key))[key] : undefined;
+  const store = await browser.storage.local.get(null);
+  entry = key ? store[key] : undefined;
 
   const label = !key ? 'unavailable' : !entry ? 'not-saved'
     : state(entry) === 'clean' ? 'hoarded' : 'saved';
@@ -37,7 +38,17 @@ async function refresh() {
   $('save').disabled = !key;
   $('forget').hidden = !entry;
 
-  const entries = await all();
+  // What the bulk button would actually write: hoardable, not saved yet, and
+  // counted once per page — two tabs of one article are one record.
+  const unsaved = new Set((await browser.tabs.query({ currentWindow: true }))
+    .filter(t => hoardable(t.url) && !(KEY(normalize(t.url)) in store))
+    .map(t => normalize(t.url))).size;
+  $('saveAll').disabled = !unsaved;
+  $('saveAllLabel').textContent = unsaved
+    ? `Save all opened tabs (${unsaved})`
+    : 'All opened tabs are saved';
+
+  const entries = await all(store);
   const pending = entries.filter(e => state(e) !== 'clean');
   $('export').disabled = !pending.length;
 
@@ -74,6 +85,15 @@ $('save').addEventListener('click', () => {
   f.src = `editor.html?tab=${tab.id}`;
   $('menu').hidden = true;
   f.hidden = false;
+});
+// Bulk save. No editor, no per-tab questions — the user hoards the windowful
+// and edits the few that matter later. Tabs already saved keep their notes.
+$('saveAll').addEventListener('click', async () => {
+  $('saveAll').disabled = true;
+  feedback('Saving every tab…', 'progress');
+  const n = await saveAll(await browser.tabs.query({ currentWindow: true }));
+  await refresh();
+  feedback(n ? `Saved ${n} tab${n > 1 ? 's' : ''}` : 'Every tab was already saved', n ? 'success' : '');
 });
 $('forget').addEventListener('click', async () => {
   await browser.storage.local.remove(key);

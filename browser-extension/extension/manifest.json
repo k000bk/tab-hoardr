@@ -49,10 +49,17 @@
   "commands": {
     "save-tab": {
       "suggested_key": {
-        "default": "Ctrl+Shift+U",
-        "mac": "MacCtrl+Shift+U"
+        "default": "Ctrl+S",
+        "mac": "MacCtrl+S"
       },
       "description": "Save the current tab"
+    },
+    "save-all-tabs": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "MacCtrl+Shift+S"
+      },
+      "description": "Save all opened tabs"
     }
   },
   "options_ui": {

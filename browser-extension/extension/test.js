@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { normalize, state, isNewer, restoreRecord } = require('./lib.js');
+const { normalize, state, isNewer, restoreRecord, newEntry, content } = require('./lib.js');
 
 const same = (a, b) => assert.strictEqual(normalize(a), normalize(b), `${a} !== ${b}`);
 
@@ -55,3 +55,20 @@ assert.strictEqual(state(r), 'update');                   // 200 > 150
 assert.strictEqual(restoreRecord({ url: 'https://a.com', exportedAt: null }).exportedAt, null);
 
 console.log('ok');
+
+// A bulk-saved record must look exactly like an editor-saved one: unexported,
+// with the page's own title where the injection worked and the tab's when it did not.
+const bulk = newEntry({ url: 'https://www.Example.com/a/?utm_source=x', title: 'Tab title' }, null);
+assert.strictEqual(bulk.normUrl, 'https://example.com/a');
+assert.strictEqual(bulk.title, 'Tab title');
+assert.strictEqual(bulk.exportedAt, null);
+assert.strictEqual(state(bulk), 'new');
+assert.strictEqual(newEntry({ url: 'https://e.com', title: 'Tab' }, { title: 'Page' }).title, 'Page');
+
+// `pinned` is not exported, so it must not count as an edit — unticking "keep
+// tab on export" on an exported tab used to push it into the next export.
+const hoarded = { title: 'T', description: 'D', note: 'N', tags: ['a'], pinned: true, updatedAt: 5, exportedAt: 10 };
+assert.strictEqual(state(hoarded), 'clean');
+assert.strictEqual(content({ ...hoarded, pinned: false }), content(hoarded));
+assert.notStrictEqual(content({ ...hoarded, note: 'N2' }), content(hoarded));
+assert.notStrictEqual(content({ ...hoarded, tags: ['a', 'b'] }), content(hoarded));

@@ -47,6 +47,9 @@ async function openEditor(tabId) {
 }
 
 browser.commands.onCommand.addListener(async name => {
+  // Bulk save opens no editor and says nothing: the badges tick over by
+  // themselves, through the storage.onChanged listener below.
+  if (name === 'save-all-tabs') return void saveAll(await browser.tabs.query({ currentWindow: true }));
   if (name !== 'save-tab') return;
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   if (tab) openEditor(tab.id);

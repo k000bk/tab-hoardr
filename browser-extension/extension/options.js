@@ -1,5 +1,5 @@
-const NAME = 'save-tab';
-const rec = document.getElementById('rec');
+// One recorder per row; the row's data-command says which command it sets.
+const rows = [...document.querySelectorAll('.setting-row.shortcut')];
 const msg = document.getElementById('msg');
 
 const say = (text, cls = '') => { msg.textContent = text; msg.className = cls; };
@@ -10,8 +10,11 @@ const displayShortcut = shortcut => {
 };
 
 const show = async () => {
-  const cmd = (await browser.commands.getAll()).find(c => c.name === NAME);
-  rec.value = cmd?.shortcut ? displayShortcut(cmd.shortcut) : 'Not set';
+  const cmds = await browser.commands.getAll();
+  for (const row of rows) {
+    const cmd = cmds.find(c => c.name === row.dataset.command);
+    row.querySelector('.rec').value = cmd?.shortcut ? displayShortcut(cmd.shortcut) : 'Not set';
+  }
 };
 show();
 
@@ -46,47 +49,55 @@ function toShortcut(e) {
 // browser page that no extension may script, only open. Firefox keeps the
 // in-page recorder.
 if (!browser.commands.update) {
-  document.getElementById('reset').hidden = true;
-  document.querySelector('.setting-description').textContent =
-    'This browser sets extension shortcuts on its own page.';
-  rec.addEventListener('click', () => browser.tabs.create({ url: 'chrome://extensions/shortcuts' }));
-  say('This browser manages shortcuts itself. Click the field to open its shortcuts page.');
+  for (const row of rows) {
+    row.querySelector('.reset').hidden = true;
+    row.querySelector('.setting-description').textContent =
+      'This browser sets extension shortcuts on its own page.';
+    row.querySelector('.rec').addEventListener('click', () =>
+      browser.tabs.create({ url: 'chrome://extensions/shortcuts' }));
+  }
+  say('This browser manages shortcuts itself. Click a field to open its shortcuts page.');
 } else {
-  rec.addEventListener('focus', () => {
-    rec.classList.add('listening');
-    rec.value = 'Listening…';
-    say('Press the new key combination. Escape cancels.', 'listening');
-  });
-  rec.addEventListener('blur', () => {
-    rec.classList.remove('listening');
-    show();
-    say('Needs Control, Alt or Command, or a function key.');
-  });
+  for (const row of rows) {
+    const name = row.dataset.command;
+    const rec = row.querySelector('.rec');
 
-  rec.addEventListener('keydown', async e => {
-    e.preventDefault();
-    if (['Escape', 'Tab'].includes(e.key)) return rec.blur();
-    const shortcut = toShortcut(e);
-    if (!shortcut) return say('Needs Ctrl, Alt or Cmd plus a letter, digit or arrow.', 'err');
-    try {
-      await browser.commands.update({ name: NAME, shortcut });
-      rec.value = displayShortcut(shortcut);
+    rec.addEventListener('focus', () => {
+      rec.classList.add('listening');
+      rec.value = 'Listening…';
+      say('Press the new key combination. Escape cancels.', 'listening');
+    });
+    rec.addEventListener('blur', () => {
       rec.classList.remove('listening');
-      say(`Saved — ${shortcut}`, 'ok');
-    } catch (err) {
-      say(String(err.message || err), 'err');
-    }
-  });
+      show();
+      say('Needs Control, Alt or Command, or a function key.');
+    });
 
-  document.getElementById('reset').addEventListener('click', async () => {
-    try {
-      await browser.commands.reset(NAME);
-      await show();
-      say(`Reset — ${rec.value}`, 'ok');
-    } catch (err) {
-      say(String(err.message || err), 'err');
-    }
-  });
+    rec.addEventListener('keydown', async e => {
+      e.preventDefault();
+      if (['Escape', 'Tab'].includes(e.key)) return rec.blur();
+      const shortcut = toShortcut(e);
+      if (!shortcut) return say('Needs Ctrl, Alt or Cmd plus a letter, digit or arrow.', 'err');
+      try {
+        await browser.commands.update({ name, shortcut });
+        rec.value = displayShortcut(shortcut);
+        rec.classList.remove('listening');
+        say(`Saved — ${shortcut}`, 'ok');
+      } catch (err) {
+        say(String(err.message || err), 'err');
+      }
+    });
+
+    row.querySelector('.reset').addEventListener('click', async () => {
+      try {
+        await browser.commands.reset(name);
+        await show();
+        say(`Reset — ${rec.value}`, 'ok');
+      } catch (err) {
+        say(String(err.message || err), 'err');
+      }
+    });
+  }
 }
 
 // --- Update check -----------------------------------------------------------

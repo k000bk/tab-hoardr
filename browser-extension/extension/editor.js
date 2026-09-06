@@ -36,34 +36,7 @@ async function fit() {
   entry = (await browser.storage.local.get(key))[key];
   const existing = Boolean(entry);
   if (!existing) {
-    // Injected on demand, for this one tab, because no content script stands by.
-    // It cannot run on about:, view-source:, the PDF viewer, AMO or the Chrome
-    // Web Store — there tab.title carries the name and the description stays empty.
-    const [{ result: meta } = {}] = await browser.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: () => {
-        const m = s => document.querySelector(s)?.content?.trim() || '';
-        return {
-          title: document.title || '',
-          description:
-            m('meta[name="description" i]') ||
-            m('meta[property="og:description" i]') ||
-            m('meta[name="twitter:description" i]')
-        };
-      }
-    }).catch(() => []);
-    entry = {
-      url: tab.url,
-      normUrl: normalize(tab.url),
-      title: meta?.title || tab.title || '',
-      description: meta?.description || '',
-      note: '',
-      tags: [],
-      pinned: false,
-      savedAt: now(),
-      updatedAt: now(),
-      exportedAt: null
-    };
+    entry = newEntry(tab, await readMeta(tab.id));
     await browser.storage.local.set({ [key]: entry });
   }
 
@@ -84,12 +57,15 @@ const patch = () => {
   if (!entry || !key) return;
   clearTimeout(t);
   t = setTimeout(async () => {
+    const before = content(entry);
     entry.title = $('title').value.trim();
     entry.description = $('description').value.trim();
     entry.note = $('note').value.trim();
     entry.tags = $('tags').value.split(',').map(s => s.trim()).filter(Boolean);
     entry.pinned = $('pinned').checked;
-    entry.updatedAt = now();
+    // Only exported content moves the clock. Toggling "keep tab on export", or
+    // typing a word and deleting it again, leaves a Hoarded tab hoarded.
+    if (content(entry) !== before) entry.updatedAt = now();
     await browser.storage.local.set({ [key]: entry });
   }, 150);
 };
