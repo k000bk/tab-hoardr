@@ -1,5 +1,6 @@
+// Toolbar menu. Saves nothing itself — "Save current tab" hands off to the
+// background script, which owns the editor window.
 const $ = id => document.getElementById(id);
-const now = () => Date.now();
 let tab, key, entry, hoardedTabs = [];
 
 const all = async () =>
@@ -7,9 +8,7 @@ const all = async () =>
     .filter(([k]) => k.startsWith('t:'))
     .map(([, v]) => v);
 
-// --- menu ------------------------------------------------------------------
-// Single source of truth for every button/label in the menu. Called on open and
-// after anything that can change storage or the set of open tabs.
+// Single source of truth for every label and disabled state in the menu.
 async function refresh() {
   entry = key ? (await browser.storage.local.get(key))[key] : undefined;
 
@@ -19,6 +18,7 @@ async function refresh() {
   $('badge').className = label === 'saved' ? 'saved' : label === 'hoarded' ? 'hoarded' : '';
   $('save').textContent = entry ? 'Edit saved tab' : 'Save current tab';
   $('save').disabled = !key;
+  $('forget').hidden = !entry;
 
   const entries = await all();
   const pending = entries.filter(e => state(e) !== 'clean');
@@ -43,68 +43,22 @@ async function refresh() {
   await refresh();
 })();
 
-// --- editor ----------------------------------------------------------------
-async function openEditor() {
-  if (!entry) {
-    const meta = await browser.tabs.sendMessage(tab.id, 'meta').catch(() => ({}));
-    entry = {
-      url: tab.url,
-      normUrl: normalize(tab.url),
-      title: meta.title || tab.title || '',
-      description: meta.description || '',
-      note: '',
-      tags: [],
-      pinned: false,
-      savedAt: now(),
-      updatedAt: now(),
-      exportedAt: null
-    };
-    await browser.storage.local.set({ [key]: entry });
-  }
-  $('title').value = entry.title;
-  $('editorHost').textContent = entry.normUrl;
-  $('description').value = entry.description;
-  $('note').value = entry.note;
-  $('tags').value = entry.tags.join(', ');
-  $('pinned').checked = entry.pinned;
+$('save').addEventListener('click', () => {
+  const f = $('editor');
+  f.onload = () => {
+    f.style.height = f.contentDocument.documentElement.scrollHeight + 'px';
+    f.contentWindow.focus();
+  };
+  f.src = `editor.html?tab=${tab.id}`;
   $('menu').hidden = true;
-  $('editor').hidden = false;
-  $('note').focus();
-}
-
-let t;
-const patch = () => {
-  clearTimeout(t);
-  t = setTimeout(async () => {
-    entry.title = $('title').value.trim();
-    entry.description = $('description').value.trim();
-    entry.note = $('note').value.trim();
-    entry.tags = $('tags').value.split(',').map(s => s.trim()).filter(Boolean);
-    entry.pinned = $('pinned').checked;
-    entry.updatedAt = now();
-    await browser.storage.local.set({ [key]: entry });
-  }, 150);
-};
-for (const el of ['title', 'description', 'note', 'tags', 'pinned']) $(el).addEventListener('input', patch);
-
-$('note').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); patch(); setTimeout(window.close, 200); }
+  f.hidden = false;
 });
-$('tags').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { patch(); setTimeout(window.close, 200); }
-});
-$('save').addEventListener('click', openEditor);
-$('back').addEventListener('click', async () => {
-  patch();
-  $('editor').hidden = true;
-  $('menu').hidden = false;
+$('forget').addEventListener('click', async () => {
+  await browser.storage.local.remove(key);
   await refresh();
 });
 $('prefs').addEventListener('click', () => browser.runtime.openOptionsPage());
-$('forget').addEventListener('click', async () => {
-  await browser.storage.local.remove(key);
-  window.close();
-});
+
 // Two-click confirm. window.confirm() from a browser_action popup can dismiss
 // the popup itself, taking the pending click with it.
 let armed = false;
@@ -161,7 +115,7 @@ $('export').addEventListener('click', async () => {
   const id = await browser.downloads.download({ url, filename: name, saveAs: false });
   if (!(await settled(id))) { $('status').textContent = 'download failed'; btn.disabled = false; return; }
 
-  const stampMs = now();
+  const stampMs = Date.now();
   await browser.storage.local.set(
     Object.fromEntries(pending.map(e => [KEY(e.normUrl), { ...e, exportedAt: stampMs }]))
   );

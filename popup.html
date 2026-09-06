@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<link rel="stylesheet" href="ui.css">
 <style>
-  :root { color-scheme: dark }
-  body {
-    margin: 0; width: 320px; padding: 12px;
-    font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
-    background: #16181d; color: #e6e8ea;
-  }
-  .host { color: #7d8590; font-size: 11px;
-          overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  body { width: 320px; padding: 0 }
+  #menu { padding: 12px }
+  /* The editor is editor.html itself, so the panel and the standalone window
+     stay one implementation. Auto-height is set on load. */
+  #editor { width: 320px; border: 0 }
+  #editor:not([hidden]) { display: block }
   #badge {
     display: block; text-align: center; font-size: 15px; font-weight: 600;
     letter-spacing: .04em; padding: 12px; border-radius: 8px; margin-bottom: 8px;
@@ -18,58 +17,22 @@
   #badge.hoarded { background: #422006; color: #fcd34d; border-color: #a16207 }
   .menu { display: flex; flex-direction: column; gap: 6px; margin-top: 12px }
   .menu button { text-align: left }
-  textarea, input[type=text] {
-    width: 100%; box-sizing: border-box; margin-bottom: 8px;
-    background: #0e1014; color: inherit; border: 1px solid #2c3038;
-    border-radius: 6px; padding: 7px 8px; font: inherit; resize: vertical;
-  }
-  #title { font-weight: 600 }
-  #description { min-height: 44px }
-  #note { min-height: 62px }
-  textarea:focus, input:focus { outline: none; border-color: #16a34a }
-  .row { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #9aa4ae }
-  .row label { display: flex; align-items: center; gap: 5px; cursor: pointer }
-  button {
-    font: inherit; border: 1px solid #2c3038; background: #21262d; color: #e6e8ea;
-    border-radius: 6px; padding: 7px 10px; cursor: pointer;
-  }
-  button:hover:not(:disabled) { border-color: #3d444d }
-  button:disabled { opacity: .4; cursor: default }
-  button.go { background: #15803d; border-color: #16a34a }
-  button.link { background: none; border: none; color: #9aa4ae; padding: 0; font-size: 11px;
-                text-decoration: underline; cursor: pointer }
-  footer { display: flex; align-items: center; gap: 8px; margin-top: 12px;
-           padding-top: 10px; border-top: 1px solid #262a31 }
+  .menu button[hidden] { display: none }
   #status { flex: 1; font-size: 11px; color: #9aa4ae }
 </style>
 
 <div id="menu">
-  <div id="badge">…</div>
-  <div class="host" id="host"></div>
-  <div class="menu">
-    <button class="go" id="save">Save current tab</button>
-    <button id="export">Export saved tabs</button>
-    <button id="closeHoarded">Close hoarded tabs</button>
-    <button id="prefs">Options</button>
-  </div>
-  <footer><span id="status"></span></footer>
+<div id="badge">…</div>
+<div class="host" id="host"></div>
+<div class="menu">
+  <button class="go" id="save">Save current tab</button>
+  <button id="forget" hidden>Forget saved tab</button>
+  <button id="export">Export saved tabs</button>
+  <button id="closeHoarded">Close hoarded tabs</button>
+  <button id="prefs">Options</button>
 </div>
-
-<div id="editor" hidden>
-  <input type="text" id="title" placeholder="title" autofocus>
-  <div class="host" id="editorHost"></div>
-  <textarea id="description" placeholder="description…"></textarea>
-  <textarea id="note" placeholder="note…"></textarea>
-  <input type="text" id="tags" placeholder="tags, comma separated">
-  <div class="row">
-    <label><input type="checkbox" id="pinned"> keep tab on export</label>
-    <span style="flex:1"></span>
-    <button class="link" id="forget">forget</button>
-  </div>
-  <footer>
-    <span style="flex:1"></span>
-    <button class="link" id="back">← menu</button>
-  </footer>
+<footer><span id="status"></span></footer>
 </div>
+<iframe id="editor" hidden></iframe>
 <script src="lib.js"></script>
 <script src="popup.js"></script>

@@ -11,17 +11,24 @@ addons.mozilla.org, or use Zen/Firefox Developer Edition with
 
 ## Use
 
-- Click the toolbar icon (or **Ctrl+Shift+U**, Mac: **Control+Shift+U**) to open
-  the menu: a big badge for the current tab's state — *not saved* / *saved* /
-  *hoarded* — then **Save current tab**, **Export saved tabs**, **Close hoarded
-  tabs**, **Options**, and a count of what's ready to export. Nothing is saved
-  until you press Save.
-- **Save current tab** grabs url, title and meta description, then opens the
-  editor: title, description, note, tags — all editable. Enter closes it,
-  **← menu** goes back.
-  Rebind the shortcut in **Options**, or `about:addons` → gear → Manage Extension
-  Shortcuts. If a combination does nothing, the browser or another add-on already
-  owns it — the settings page can't detect that, pick another.
+Two entry points, on purpose:
+
+- **Ctrl+Shift+U** (Mac: **Control+Shift+U**) — opens the **editor** for the
+  active tab in a small standalone window, centred on the browser window. It
+  saves the tab on open (url, title, meta description), then title, description,
+  note and tags are all editable. Enter or **Save** closes it, Esc too, **Forget**
+  deletes the entry (also available straight from the menu). Being a real window, it does not vanish when it loses focus.
+- **Toolbar icon** — opens the **menu**: a big badge for the current tab's state
+  (*not saved* / *saved* / *hoarded*), then **Save current tab** / **Edit saved
+  tab** — the same editor, drawn inside the panel itself rather than as a
+  window —
+  **Export saved tabs**, **Close hoarded tabs**, **Options**, and a count of
+  what's ready to export.
+
+Rebind the shortcut in **Options**, or `about:addons` → gear → Manage Extension
+Shortcuts. If a combination does nothing, the browser or another add-on already
+owns it — the settings page can't detect that, pick another.
+
 - Already-saved pages show a green **✦ hoarded** pill bottom-left, plus a ✓ on the
   toolbar icon.
 - **keep tab on export** = pinned, that tab survives **Close hoarded tabs**.
@@ -40,6 +47,10 @@ addons.mozilla.org, or use Zen/Firefox Developer Edition with
 
 `state` is `new` (first export) or `update` (edited after a previous export).
 Clean entries are never re-exported.
+
+The editor exists once, as `editor.html`. The toolbar panel embeds it in an
+iframe (auto-sized on load); the shortcut opens it as a standalone window. It
+calls `top.close()`, which closes whichever of the two it is living in.
 
 ## Storage
 

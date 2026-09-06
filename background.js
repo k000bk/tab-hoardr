@@ -15,6 +15,34 @@ async function paint(tabId, url) {
   browser.tabs.sendMessage(tabId, { show: entry }).catch(() => {});
 }
 
+// --- editor window ---------------------------------------------------------
+// A standalone window, not a browser_action popup: centred on the browser window
+// and immune to focus loss. Opened by the keyboard shortcut and by the menu.
+const EDITOR = { w: 400, h: 400 };
+let editorWin = null;
+
+async function openEditor(tabId) {
+  // Centred on the browser window the user is looking at — not screen 0, and
+  // never on the editor popup itself, hence type === 'normal'.
+  const wins = await browser.windows.getAll();
+  const win = wins.find(w => w.type === 'normal' && w.focused) || wins.find(w => w.type === 'normal');
+  const left = Math.round((win?.left ?? 0) + ((win?.width ?? screen.availWidth) - EDITOR.w) / 2);
+  const top = Math.round((win?.top ?? 0) + ((win?.height ?? screen.availHeight) - EDITOR.h) / 2);
+
+  if (editorWin !== null) await browser.windows.remove(editorWin).catch(() => {}); // no stacking
+  editorWin = (await browser.windows.create({
+    url: browser.runtime.getURL(`editor.html?tab=${tabId}`),
+    type: 'popup', width: EDITOR.w, height: EDITOR.h, left, top
+  })).id;
+}
+browser.windows.onRemoved.addListener(id => { if (id === editorWin) editorWin = null; });
+
+browser.commands.onCommand.addListener(async name => {
+  if (name !== 'save-tab') return;
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  if (tab) openEditor(tab.id);
+});
+
 // A freshly loaded content script asks what to draw. sender.tab.url — not the
 // page's own location.href, which SPAs rewrite out from under it.
 browser.runtime.onMessage.addListener((msg, sender) =>

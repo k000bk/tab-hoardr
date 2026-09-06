@@ -1,4 +1,4 @@
-const NAME = '_execute_browser_action';
+const NAME = 'save-tab';
 const rec = document.getElementById('rec');
 const msg = document.getElementById('msg');
 

@@ -45,12 +45,12 @@
     }
   ],
   "commands": {
-    "_execute_browser_action": {
+    "save-tab": {
       "suggested_key": {
         "default": "Ctrl+Shift+U",
         "mac": "MacCtrl+Shift+U"
       },
-      "description": "Open the Tab Hoardr menu"
+      "description": "Save the current tab"
     }
   },
   "options_ui": {

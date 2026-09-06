@@ -1,0 +1,28 @@
+/* Shared by popup.html (toolbar menu) and editor.html (standalone window). */
+:root { color-scheme: dark }
+body {
+  margin: 0; padding: 12px;
+  font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+  background: #16181d; color: #e6e8ea;
+}
+.host { color: #7d8590; font-size: 11px; margin-bottom: 8px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+textarea, input[type=text] {
+  width: 100%; box-sizing: border-box; margin-bottom: 8px;
+  background: #0e1014; color: inherit; border: 1px solid #2c3038;
+  border-radius: 6px; padding: 7px 8px; font: inherit; resize: vertical;
+}
+textarea:focus, input:focus { outline: none; border-color: #16a34a }
+.row { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #9aa4ae }
+.row label { display: flex; align-items: center; gap: 5px; cursor: pointer }
+button {
+  font: inherit; border: 1px solid #2c3038; background: #21262d; color: #e6e8ea;
+  border-radius: 6px; padding: 7px 10px; cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: #3d444d }
+button:disabled { opacity: .4; cursor: default }
+button.go { background: #15803d; border-color: #16a34a }
+button.link { background: none; border: none; color: #9aa4ae; padding: 0; font-size: 11px;
+              text-decoration: underline; cursor: pointer }
+footer { display: flex; align-items: center; gap: 8px; margin-top: 12px;
+         padding-top: 10px; border-top: 1px solid #262a31 }

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Tab Hoardr</title>
+<link rel="stylesheet" href="ui.css">
+<style>
+  body { padding: 12px }
+  #title { font-weight: 600 }
+  #description { min-height: 48px }
+  #note { min-height: 76px }
+</style>
+
+<input type="text" id="title" placeholder="title">
+<div class="host" id="host"></div>
+<textarea id="description" placeholder="description…"></textarea>
+<textarea id="note" placeholder="note…" autofocus></textarea>
+<input type="text" id="tags" placeholder="tags, comma separated">
+<div class="row">
+  <label><input type="checkbox" id="pinned"> keep tab on export</label>
+</div>
+<footer>
+  <span style="flex:1;font-size:11px;color:#6e7781">Esc closes</span>
+  <button id="forget">Forget</button>
+  <button class="go" id="save">Save</button>
+</footer>
+<script src="lib.js"></script>
+<script src="editor.js"></script>
