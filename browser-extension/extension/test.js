@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { normalize, state, isNewer } = require('./lib.js');
+const { normalize, state, isNewer, restoreRecord } = require('./lib.js');
 
 const same = (a, b) => assert.strictEqual(normalize(a), normalize(b), `${a} !== ${b}`);
 
@@ -31,5 +31,27 @@ assert.ok(isNewer('0.2.10', '0.2.9'));   // not a string compare
 assert.ok(isNewer('1.0', '0.9.9'));      // missing parts are 0
 assert.ok(!isNewer('0.2.0', '0.2.0'));
 assert.ok(!isNewer('0.1.9', '0.2.0'));
+
+// Restore takes a file the user picked. Junk in, nothing or a clean record out.
+assert.strictEqual(restoreRecord(null), null);
+assert.strictEqual(restoreRecord({}), null);
+assert.strictEqual(restoreRecord({ url: 'javascript:alert(1)' }), null);
+assert.strictEqual(restoreRecord({ url: 'file:///etc/passwd' }), null);
+
+const r = restoreRecord({
+  url: 'https://www.Example.com/a/?utm_source=x',
+  title: 'T', description: 'D', note: 'N', tags: ['a', 2], pinned: 1,
+  savedAt: 100, updatedAt: 200, exportedAt: 150,
+  evil: 'dropped'
+});
+assert.strictEqual(r.normUrl, 'https://example.com/a');   // key comes from the url, not the file
+assert.deepStrictEqual(r.tags, ['a', '2']);
+assert.strictEqual(r.pinned, true);
+assert.strictEqual(r.exportedAt, 150);
+assert.ok(!('evil' in r));
+assert.strictEqual(state(r), 'update');                   // 200 > 150
+
+// A never-exported entry survives the round trip as never-exported.
+assert.strictEqual(restoreRecord({ url: 'https://a.com', exportedAt: null }).exportedAt, null);
 
 console.log('ok');

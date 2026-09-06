@@ -1,5 +1,7 @@
-// Resolve the tab URL once. The badge marks any saved entry; the page pill is
-// reserved for fully exported entries, where "hoarded" means safe to close.
+// The toolbar checkmark is the only marker. Drawing into the page was never
+// reliable — a site's own CSS, its framework and its Trusted Types policy all
+// get a vote — so nothing is injected any more. The popup tells saved from
+// hoarded; the badge only says "this page is saved".
 browser.action.setBadgeBackgroundColor({ color: '#9b6df2' });
 browser.action.setBadgeTextColor?.({ color: '#ffffff' }); // not in older Chrome
 
@@ -12,8 +14,6 @@ async function entryFor(url) {
 async function paint(tabId, url) {
   const entry = await entryFor(url);
   browser.action.setBadgeText({ tabId, text: entry ? '✓' : '' }).catch(() => {});
-  const hoarded = entry && state(entry) === 'clean' ? entry : null;
-  browser.tabs.sendMessage(tabId, { show: hoarded }).catch(() => {});
 }
 
 // --- editor window ---------------------------------------------------------
@@ -52,15 +52,6 @@ browser.commands.onCommand.addListener(async name => {
   if (tab) openEditor(tab.id);
 });
 
-// A freshly loaded content script asks what to draw. sender.tab.url — not the
-// page's own location.href, which SPAs rewrite out from under it.
-// sendResponse + `return true`, not a returned promise: Chrome ignores promises here.
-browser.runtime.onMessage.addListener((msg, sender, respond) => {
-  if (msg !== 'hello') return;
-  entryFor(sender.tab?.url).then(entry => respond(entry && state(entry) === 'clean' ? entry : null));
-  return true;
-});
-
 browser.tabs.onUpdated.addListener((tabId, ch, tab) => {
   // ch.url alone covers pushState/replaceState; status covers real loads.
   if (ch.url || ch.status === 'complete') paint(tabId, tab.url);
@@ -76,21 +67,10 @@ browser.storage.onChanged.addListener(async changes => {
   }
 });
 
-// Content scripts only inject into pages loaded after the extension. Tabs open
-// before that (all of them, after a temporary-addon reload) need a hand.
-async function adopt() {
-  for (const t of await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] })) {
-    browser.tabs
-      .sendMessage(t.id, 'ping')
-      .then(() => paint(t.id, t.url))
-      // about:, view-source:, PDF viewer, AMO, the Chrome Web Store — no script
-      // allowed there, badge only.
-      .catch(() =>
-        browser.scripting
-          .executeScript({ target: { tabId: t.id }, files: ['compat.js', 'content.js'] })
-          .catch(() => {})
-      );
-  }
+// The per-tab badge is the browser's state, not ours: it is blank again after a
+// restart and after an update, so every open tab needs one repaint.
+async function repaintAll() {
+  for (const t of await browser.tabs.query({})) if (t.url) paint(t.id, t.url);
 }
-browser.runtime.onInstalled.addListener(adopt);
-browser.runtime.onStartup.addListener(adopt);
+browser.runtime.onInstalled.addListener(repaintAll);
+browser.runtime.onStartup.addListener(repaintAll);

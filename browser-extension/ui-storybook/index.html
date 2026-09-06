@@ -733,8 +733,6 @@
     .article-kicker { margin-bottom: 8px; color: #8a6d48; font: 600 9px/1 var(--font-default); letter-spacing: 0.1em; text-transform: uppercase; }
     .article-preview h3 { max-width: 480px; margin-bottom: 10px; font: 700 25px/1.08 Georgia, serif; letter-spacing: -0.02em; }
     .article-preview p { color: #6d645c; font: 12px/1.55 Georgia, serif; }
-    .hoarded-pill { position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid hsl(var(--accent-h) var(--accent-s) 72%); border-radius: 999px; background: hsl(var(--accent-h) 42% 24% / 0.94); box-shadow: 0 2px 8px rgb(0 0 0 / 0.25); color: #f0eaff; font: 600 11px/1 var(--font-default); white-space: nowrap; }
-    .hoarded-pill svg { width: 11px; height: 11px; fill: currentColor; }
 
     .page-footer { margin-top: 78px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--text-faint); font-size: var(--font-ui-smallest); }
     .page-footer a { color: var(--text-muted); }
@@ -1105,7 +1103,7 @@
       </div>
 
       <article class="specimen">
-        <div class="specimen-caption"><div><div class="specimen-name">Saved-page context</div><div class="specimen-description">Visible on normal web pages after a tab is saved.</div></div><span class="state-label saved">synchronized</span></div>
+        <div class="specimen-caption"><div><div class="specimen-name">Saved-page context</div><div class="specimen-description">A saved tab is marked on the toolbar icon only. Nothing is drawn into the page.</div></div><span class="state-label saved">synchronized</span></div>
         <div class="stage">
           <div class="browser-scene" style="width:min(860px,100%)">
             <div class="browser-toolbar">
@@ -1114,7 +1112,6 @@
               <span class="browser-action"><svg><use href="#i-stack"/></svg><span class="browser-badge">✓</span></span>
             </div>
             <article class="article-preview"><div class="article-kicker">Design systems</div><h3>Building browser tools that stay out of the way</h3><p>Good capture tools reduce friction without asking people to reorganize their attention. The best interface is clear at a glance, then disappears.</p></article>
-            <div class="hoarded-pill"><svg><use href="#i-spark"/></svg>hoarded · productivity · browser</div>
           </div>
         </div>
       </article>

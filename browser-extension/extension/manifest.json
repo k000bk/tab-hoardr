@@ -46,19 +46,6 @@
     "48": "icon-48.png",
     "128": "icon-128.png"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "js": [
-        "compat.js",
-        "content.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
   "commands": {
     "save-tab": {
       "suggested_key": {

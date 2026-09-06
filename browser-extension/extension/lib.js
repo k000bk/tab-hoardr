@@ -1,4 +1,4 @@
-// Shared by background, content script and popup.
+// Shared by the background script and every extension page.
 
 // Tracking params only. Nothing ambiguous: `s` was here and is WordPress's
 // search query — dropping it filed every search result page under one key.
@@ -40,6 +40,35 @@ const isNewer = (a, b) => {
   return false;
 };
 
+// Restore rebuilds a record field by field from a file the user picked, never
+// trusting it as-is: the storage key is re-derived from the record's own url, so
+// a doctored key in the file cannot write anywhere else. Returns null for
+// anything that is not a saved tab.
+const restoreRecord = e => !e || typeof e.url !== 'string' || !hoardable(e.url) ? null : ({
+  url: e.url,
+  normUrl: normalize(e.url),
+  title: String(e.title ?? ''),
+  description: String(e.description ?? ''),
+  note: String(e.note ?? ''),
+  tags: Array.isArray(e.tags) ? e.tags.map(String) : [],
+  pinned: Boolean(e.pinned),
+  savedAt: Number(e.savedAt) || Date.now(),
+  updatedAt: Number(e.updatedAt) || Date.now(),
+  exportedAt: Number(e.exportedAt) || null
+});
+
+// A download reports "started", not "written". Both callers tell the user their
+// file is safe, so both wait for the real verdict.
+// ponytail: polls download state instead of onChanged — no listener race, 10s ceiling.
+async function settled(id) {
+  for (let i = 0; i < 100; i++) {
+    const [d] = await browser.downloads.search({ id });
+    if (!d || d.state !== 'in_progress') return d?.state === 'complete';
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return false;
+}
+
 const REPO = 'k000bk/tab-hoardr';
 const RELEASES_URL = `https://github.com/${REPO}/releases/latest`;
 const UPDATE_KEY = 'updateCheck';
@@ -64,4 +93,4 @@ async function checkUpdate(force) {
   return result;
 }
 
-if (typeof module !== 'undefined') module.exports = { normalize, KEY, state, hoardable, isNewer };
+if (typeof module !== 'undefined') module.exports = { normalize, KEY, state, hoardable, isNewer, restoreRecord };

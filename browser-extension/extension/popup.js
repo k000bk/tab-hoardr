@@ -108,16 +108,6 @@ $('closeHoarded').addEventListener('click', async () => {
 });
 
 // --- export ----------------------------------------------------------------
-// ponytail: polls download state instead of onChanged — no listener race, 10s ceiling.
-async function settled(id) {
-  for (let i = 0; i < 100; i++) {
-    const [d] = await browser.downloads.search({ id });
-    if (!d || d.state !== 'in_progress') return d?.state === 'complete';
-    await new Promise(r => setTimeout(r, 100));
-  }
-  return false;
-}
-
 $('export').addEventListener('click', async () => {
   const btn = $('export');
   btn.disabled = true;

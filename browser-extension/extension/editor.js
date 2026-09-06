@@ -36,12 +36,27 @@ async function fit() {
   entry = (await browser.storage.local.get(key))[key];
   const existing = Boolean(entry);
   if (!existing) {
-    const meta = await browser.tabs.sendMessage(tab.id, 'meta').catch(() => ({}));
+    // Injected on demand, for this one tab, because no content script stands by.
+    // It cannot run on about:, view-source:, the PDF viewer, AMO or the Chrome
+    // Web Store — there tab.title carries the name and the description stays empty.
+    const [{ result: meta } = {}] = await browser.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const m = s => document.querySelector(s)?.content?.trim() || '';
+        return {
+          title: document.title || '',
+          description:
+            m('meta[name="description" i]') ||
+            m('meta[property="og:description" i]') ||
+            m('meta[name="twitter:description" i]')
+        };
+      }
+    }).catch(() => []);
     entry = {
       url: tab.url,
       normUrl: normalize(tab.url),
-      title: meta.title || tab.title || '',
-      description: meta.description || '',
+      title: meta?.title || tab.title || '',
+      description: meta?.description || '',
       note: '',
       tags: [],
       pinned: false,

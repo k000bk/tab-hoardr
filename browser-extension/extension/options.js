@@ -116,3 +116,71 @@ check.addEventListener('click', async () => {
     check.disabled = false;
   }
 });
+
+// --- Back up and restore ----------------------------------------------------
+// Uninstalling the add-on deletes storage.local with it. A hand-installed update
+// done in the wrong order — Remove, then Install — therefore loses every saved
+// tab, and no undo exists inside the browser. This is the way back.
+// Records are copied whole, exportedAt included, so a restored tab is not
+// re-exported and is not wrongly reported as new.
+const data = document.getElementById('data');
+const restoreFile = document.getElementById('restoreFile');
+const report = (text, cls = '') => { data.textContent = text; data.className = cls; };
+const plural = n => (n === 1 ? '' : 's');
+
+document.getElementById('backup').addEventListener('click', async () => {
+  const store = await browser.storage.local.get(null);
+  const entries = Object.fromEntries(Object.entries(store).filter(([k]) => k.startsWith('t:')));
+  const n = Object.keys(entries).length;
+  if (!n) return report('There is nothing to back up yet.', 'err');
+
+  const s = new Date(), p = v => String(v).padStart(2, '0');
+  const name =
+    `${s.getFullYear()}${p(s.getMonth() + 1)}${p(s.getDate())}` +
+    `-${p(s.getHours())}${p(s.getMinutes())}_hoardr-backup.json`;
+  const url = URL.createObjectURL(new Blob(
+    [JSON.stringify({ tabHoardrBackup: 1, at: s.toISOString(), entries }, null, 2)],
+    { type: 'application/json' }
+  ));
+  report('Backing up…');
+  try {
+    const id = await browser.downloads.download({ url, filename: name, saveAs: false });
+    if (!(await settled(id))) throw new Error('The browser did not finish the download.');
+    report(`Backed up ${n} saved tab${plural(n)} to ${name}`, 'ok');
+  } catch (err) {
+    report(err.message || String(err), 'err');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+});
+
+document.getElementById('restore').addEventListener('click', () => restoreFile.click());
+
+restoreFile.addEventListener('change', async () => {
+  const file = restoreFile.files[0];
+  restoreFile.value = ''; // so picking the same file twice fires again
+  if (!file) return;
+
+  let parsed;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch {
+    return report('That file is not readable JSON.', 'err');
+  }
+  const found = Object.values(parsed?.entries || {}).map(restoreRecord).filter(Boolean);
+  if (!found.length) return report('No saved tabs found in that file.', 'err');
+
+  // Newest wins, per tab. Restoring an old backup never undoes newer work.
+  const store = await browser.storage.local.get(null);
+  const write = {};
+  let added = 0, refreshed = 0, kept = 0;
+  for (const rec of found) {
+    const key = KEY(rec.normUrl);
+    const mine = store[key];
+    if (!mine) { write[key] = rec; added++; }
+    else if (rec.updatedAt > (mine.updatedAt || 0)) { write[key] = rec; refreshed++; }
+    else kept++;
+  }
+  if (Object.keys(write).length) await browser.storage.local.set(write);
+  report(`Restored — ${added} added, ${refreshed} updated, ${kept} left alone.`, 'ok');
+});

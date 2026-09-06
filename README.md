@@ -31,9 +31,28 @@ These browsers only accept a signed add-on from the Chrome Web Store, so this on
 is loaded by hand, and the browser shows a developer-mode notice when it starts.
 
 **Neither build updates itself.** A new version means downloading the new file
-and installing it again — the `.xpi` over the old one in Firefox, or a fresh
-**Load unpacked** in Chrome. Watch the [Releases page](../../releases) to know
-when there is one.
+and installing it again. Watch the [Releases page](../../releases) to know when
+there is one.
+
+### Update without losing your hoard
+
+Your saved tabs live inside the add-on. **The browser deletes them when the
+add-on is removed.** There is no undo, and no warning.
+
+So install the new file *on top of* the old one. Never press **Remove** first.
+
+- **Firefox and Zen.** Gear icon → **Install Add-on From File** → pick the new
+  `.xpi`. It has the same add-on ID, so the browser counts it as an update and
+  keeps your tabs.
+- **Chrome, Brave, Arc and Edge.** Unzip the new files over the same folder you
+  loaded before, then click the reload arrow on the add-on's card in
+  `chrome://extensions`. Keep the folder where it is. **Remove** followed by a
+  fresh **Load unpacked** wipes your tabs.
+
+Not sure? Back up first. **Options → Your data → Back up** writes every saved tab
+to one file in Downloads. **Restore** reads that file back in. Restoring adds to
+what you have and never overwrites a tab you saved more recently, so it is safe
+to run twice.
 
 To build and use the code yourself, read [browser-extension/extension/README.md](browser-extension/extension/README.md).
 
@@ -49,12 +68,22 @@ Your tabs stay on your computer. Nothing is sent anywhere.
 
 - The add-on saves each tab in the browser's own add-on storage, on your disk. One saved tab is one small record.
 - A record holds only what you see in the editor: the address, the title, the description, your note, your tags, and the save and export dates.
-- There is no account, no sync, no server. The code makes no network calls at all.
-- Export writes one JSON file to your Downloads folder. You choose what happens to it next.
-- **Forget** deletes the record. Removing the add-on deletes all of them.
+- There is no account, no sync and no server. Your tabs are never uploaded.
+- Export and **Back up** write a JSON file to your Downloads folder. You choose
+  what happens to it next.
+- **Forget** deletes one record. Removing the add-on deletes all of them, so
+  **Back up** before you reinstall.
 - The add-on asks for one permission that sounds large: read the address of your
   tabs. It needs it to know which page you are on and whether it is already
-  saved. Nothing leaves your disk.
+  saved. Nothing is drawn into the pages you visit, and no script of ours runs
+  there — the add-on only reads the page title and description, once, at the
+  moment you save that tab.
+
+One thing does leave your browser, and only one. Once a week the add-on asks
+GitHub for the number of the newest release, so it can tell you an update exists.
+It sends nothing about you and nothing about your tabs. It is the same public
+request as opening the Releases page yourself. If it fails, nothing happens.
+**Options → Creator → Check for updates** runs it on demand.
 
 Want to check for yourself? In Firefox open `about:debugging#/runtime/this-firefox`
 (in Chrome, `chrome://extensions` and click **service worker**), click **Inspect**
