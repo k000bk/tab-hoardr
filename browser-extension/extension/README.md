@@ -2,17 +2,29 @@
 
 Hoard tabs → export one JSON → feed it to your Obsidian CLI agent.
 
+Manifest V3. One folder, every browser: Firefox 127+ (and Zen) and Chrome 121+
+(Brave, Arc, Edge).
+
 ## Install
 
-Signed builds are on the [Releases page](../../../../releases). In Firefox open
-`about:addons`, click the gear icon, then **Install Add-on From File**.
+**Firefox, Zen.** Signed builds are on the [Releases page](../../../../releases).
+Open `about:addons`, click the gear icon, then **Install Add-on From File**.
+
+**Chrome, Brave, Arc, Edge.** Open `chrome://extensions`, turn on **Developer
+mode**, click **Load unpacked**, pick this folder. It stays until you remove it.
+
+Neither build auto-updates. The `.xpi` is signed unlisted with no `update_url`,
+so Firefox never checks for a new one; Chrome cannot update a folder it was
+handed. New version means installing it again.
 
 ## Develop
 
-Load it live: `about:debugging#/runtime/this-firefox` -> **Load Temporary
-Add-on** -> pick `manifest.json`. This version goes away when you close Firefox.
+Firefox: `about:debugging#/runtime/this-firefox` -> **Load Temporary Add-on** ->
+pick `manifest.json`. This version goes away when you close Firefox.
 
-Make a permanent, shareable build. Raise `version` in `manifest.json` first.
+Chrome: the same **Load unpacked** as above, then the reload arrow after an edit.
+
+Make a permanent, shareable Firefox build. Raise `version` in `manifest.json` first.
 
 ```bash
 export WEB_EXT_API_KEY='user:...'
@@ -21,6 +33,44 @@ npx --yes web-ext sign --channel=unlisted --ignore-files test.js README.md
 ```
 
 The signed `.xpi` lands in `web-ext-artifacts/`. Attach it to a GitHub release.
+
+Chrome has no signing step, and a self-made `.crx` will not install — outside the
+Chrome Web Store these browsers only take a folder. Ship a zip of it:
+
+```bash
+zip -r ../../tab-hoardr-chrome.zip . -x "test.js" "README.md" "web-ext-artifacts/*" ".*"
+```
+
+## Cross-browser notes
+
+**One manifest, two background keys.** It names a `service_worker` (Chrome reads
+it) and `scripts` (Firefox reads it). Each browser ignores the other's key and
+warns about it. Both warnings are expected and neither breaks anything:
+
+- Chrome, Brave, Arc: *"'background.scripts' requires manifest version of 2 or
+  lower"*. Chrome ignores the key and runs `sw.js`. From Chrome 121 only — older
+  Chrome refuses the add-on outright, hence `minimum_chrome_version`.
+- Firefox (`web-ext lint`): *"service_worker is ignored"*. Firefox runs `scripts`.
+
+Firefox has never supported `service_worker`, so no single manifest is
+warning-free. Removing either key breaks that browser. Leave them.
+
+**`compat.js`** aliases `browser` to `chrome` and loads first in every context —
+pages, content script and `sw.js`.
+
+**Toolbar icons are PNG**, because Chrome does not read SVG there. `icon.svg` is
+still the source. After editing it:
+
+```bash
+for s in 16 32 48 128; do rsvg-convert -w $s -h $s icon.svg -o icon-$s.png; done
+```
+
+**Chrome cannot set a shortcut from a page.** `options.js` tests for
+`commands.update` and falls back to opening `chrome://extensions/shortcuts`.
+Firefox keeps the in-page key recorder.
+
+**A message listener must call `respond()`.** Chrome ignores a promise returned
+from `runtime.onMessage`. An answer that needs `await` also needs `return true`.
 
 ## Use
 
@@ -38,8 +88,8 @@ Two entry points, on purpose:
   **Export saved tabs**, **Close hoarded tabs**, **Options**, and a count of
   what's ready to export.
 
-Rebind the shortcut in **Options**, or `about:addons` → gear → Manage Extension
-Shortcuts. If a combination does nothing, the browser or another add-on already
+Rebind the shortcut in **Options**. In Firefox the field records the keys; in
+Chrome it opens `chrome://extensions/shortcuts`, which does the same job. If a combination does nothing, the browser or another add-on already
 owns it — the settings page can't detect that, pick another.
 
 - Already-saved pages show a green **✦ hoarded** pill bottom-left, plus a ✓ on the
@@ -62,8 +112,10 @@ owns it — the settings page can't detect that, pick another.
 Clean entries are never re-exported.
 
 The editor exists once, as `editor.html`. The toolbar panel embeds it in an
-iframe (auto-sized on load); the shortcut opens it as a standalone window. It
-calls `top.close()`, which closes whichever of the two it is living in.
+iframe; the shortcut opens it as a standalone window. Both size themselves to the
+form — the iframe in `popup.js`, the window in `fit()` in `editor.js`, which adds
+the title bar it measures rather than a guessed constant. It calls `top.close()`,
+which closes whichever of the two it is living in.
 
 ## Storage
 
@@ -90,6 +142,6 @@ Two site behaviours the pill is built to survive:
 - **Frameworks sweeping the DOM.** The pill hangs off `<html>` (not `<body>`) and
   a `MutationObserver` re-attaches it if a hydrating app removes it.
 
-Still impossible, by design: `about:*`, `view-source:`, the built-in PDF viewer
-and `addons.mozilla.org`. No extension may script those, so the toolbar ✓ is the
-only marker there.
+Still impossible, by design: `about:*`, `chrome://*`, `view-source:`, the built-in
+PDF viewer, `addons.mozilla.org` and the Chrome Web Store. No extension may script
+those, so the toolbar ✓ is the only marker there.

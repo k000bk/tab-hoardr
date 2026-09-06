@@ -15,7 +15,10 @@
     .settings-nav-item.active { background: var(--hover); color: var(--text-normal); }
     .settings-content { padding: 24px; background: var(--background-primary); }
     .settings-content h1 { margin: 0 0 18px; font-size: 18px; }
+    .settings-section { margin: 26px 0 8px; color: var(--text-muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+    h1 + .settings-section { margin-top: 0; }
     .setting-card { max-width: 650px; padding: 3px 18px; border-radius: var(--radius-m); background: var(--background-primary-alt); }
+    .setting-row + .setting-row { border-top: 1px solid var(--border); }
     .setting-row { display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 20px; padding: 12px 0; }
     .setting-name { margin-bottom: 3px; font-size: 14px; font-weight: 500; }
     .setting-description { max-width: 330px; color: var(--text-muted); font-size: 12px; }
@@ -41,11 +44,10 @@
       <div class="settings-brand"><span class="app-logo" aria-hidden="true"><svg class="icon"><use href="icons.svg#stack"></use></svg></span>Tab Hoardr</div>
       <div class="settings-group-label">Extension</div>
       <div class="settings-nav-item active"><svg class="icon" aria-hidden="true"><use href="icons.svg#settings"></use></svg>General</div>
-      <div class="settings-group-label">Help</div>
-      <div class="settings-nav-item"><svg class="icon" aria-hidden="true"><use href="icons.svg#keyboard"></use></svg>Keyboard shortcuts</div>
     </aside>
     <section class="settings-content">
       <h1>General</h1>
+      <h2 class="settings-section">Shortcuts</h2>
       <div class="setting-card">
         <div class="setting-row">
           <div><div class="setting-name">Save current tab</div><div class="setting-description">Click the shortcut field, then press a new combination.</div></div>
@@ -53,8 +55,17 @@
         </div>
       </div>
       <div id="msg" role="status" aria-live="polite">Needs Control, Alt or Command, or a function key.</div>
+
+      <h2 class="settings-section">Creator</h2>
+      <div class="setting-card">
+        <div class="setting-row">
+          <div><div class="setting-name">Tab Hoardr</div><div class="setting-description">Source code, new versions and a place to report a problem.</div></div>
+          <div class="setting-actions"><a class="button" href="https://github.com/k000bk/tab-hoardr" target="_blank" rel="noopener noreferrer"><svg class="icon" aria-hidden="true"><use href="icons.svg#link"></use></svg>k000bk on GitHub</a></div>
+        </div>
+      </div>
     </section>
   </main>
+  <script src="compat.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

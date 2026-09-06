@@ -18,11 +18,12 @@
     <div class="field"><label class="field-label" for="note"><span>Note</span><span>Optional</span></label><textarea class="note-field" id="note" placeholder="Add context for your future self…" autofocus></textarea></div>
     <div class="field"><label class="field-label" for="tags"><span>Tags</span><span>Comma separated</span></label><input type="text" id="tags" placeholder="productivity, browser" autocomplete="off"></div>
     <label class="checkbox-row"><input type="checkbox" id="pinned">Keep tab open after export</label>
-    <footer><span class="kbd-hint">Esc closes</span><button id="forget" type="button">Forget</button><button class="go" id="save" type="button">Save</button></footer>
+    <footer><span class="kbd-hint">Esc saves & closes</span><button id="forget" type="button">Forget</button><button class="go" id="save" type="button">Save</button></footer>
   </main>
   <main class="unavailable-message" id="fallback" hidden>
     <div><span class="status-icon" aria-hidden="true"><svg class="icon"><use href="icons.svg#ban"></use></svg></span><strong>Can’t save this page</strong><p>The tab is no longer open, or the browser does not allow extensions to access it.</p></div>
   </main>
+  <script src="compat.js"></script>
   <script src="lib.js"></script>
   <script src="editor.js"></script>
 </body>

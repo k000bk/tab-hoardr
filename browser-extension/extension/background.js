@@ -1,7 +1,7 @@
 // Resolve the tab URL once. The badge marks any saved entry; the page pill is
 // reserved for fully exported entries, where "hoarded" means safe to close.
-browser.browserAction.setBadgeBackgroundColor({ color: '#9b6df2' });
-browser.browserAction.setBadgeTextColor?.({ color: '#ffffff' });
+browser.action.setBadgeBackgroundColor({ color: '#9b6df2' });
+browser.action.setBadgeTextColor?.({ color: '#ffffff' }); // not in older Chrome
 
 async function entryFor(url) {
   if (!hoardable(url)) return null;
@@ -11,32 +11,40 @@ async function entryFor(url) {
 
 async function paint(tabId, url) {
   const entry = await entryFor(url);
-  browser.browserAction.setBadgeText({ tabId, text: entry ? '✓' : '' }).catch(() => {});
+  browser.action.setBadgeText({ tabId, text: entry ? '✓' : '' }).catch(() => {});
   const hoarded = entry && state(entry) === 'clean' ? entry : null;
   browser.tabs.sendMessage(tabId, { show: hoarded }).catch(() => {});
 }
 
 // --- editor window ---------------------------------------------------------
-// A standalone window, not a browser_action popup: centred on the browser window
-// and immune to focus loss. Opened by the keyboard shortcut and by the menu.
-const EDITOR = { w: 400, h: 450 };
-let editorWin = null;
+// A standalone window, not an action popup: centred on the browser window and
+// immune to focus loss. Opened by the keyboard shortcut and by the menu.
+// The form needs 417px of viewport. This opening height clears that in both
+// browsers even if the fit() in editor.js cannot run; fit() then trims the rest.
+const EDITOR = { w: 400, h: 480 };
 
 async function openEditor(tabId) {
   // Centred on the browser window the user is looking at — not screen 0, and
-  // never on the editor popup itself, hence type === 'normal'.
-  const wins = await browser.windows.getAll();
+  // never on the editor popup itself, hence type === 'normal'. A service worker
+  // has no `screen`, so the last-resort size is a plain number.
+  const wins = await browser.windows.getAll({ populate: true });
   const win = wins.find(w => w.type === 'normal' && w.focused) || wins.find(w => w.type === 'normal');
-  const left = Math.round((win?.left ?? 0) + ((win?.width ?? screen.availWidth) - EDITOR.w) / 2);
-  const top = Math.round((win?.top ?? 0) + ((win?.height ?? screen.availHeight) - EDITOR.h) / 2);
+  const left = Math.round((win?.left ?? 0) + ((win?.width ?? 1280) - EDITOR.w) / 2);
+  const top = Math.round((win?.top ?? 0) + ((win?.height ?? 800) - EDITOR.h) / 2);
 
-  if (editorWin !== null) await browser.windows.remove(editorWin).catch(() => {}); // no stacking
-  editorWin = (await browser.windows.create({
-    url: browser.runtime.getURL(`editor.html?tab=${tabId}`),
+  // No stacking. Found by URL, not by a remembered id: Chrome stops the service
+  // worker when idle, which would forget the id. The popup's iframe is not a tab,
+  // so the menu's embedded copy never matches here.
+  const editorUrl = browser.runtime.getURL('editor.html');
+  for (const w of wins) {
+    if (w.tabs?.some(t => t.url?.startsWith(editorUrl))) await browser.windows.remove(w.id).catch(() => {});
+  }
+
+  browser.windows.create({
+    url: `${editorUrl}?tab=${tabId}`,
     type: 'popup', width: EDITOR.w, height: EDITOR.h, left, top
-  })).id;
+  });
 }
-browser.windows.onRemoved.addListener(id => { if (id === editorWin) editorWin = null; });
 
 browser.commands.onCommand.addListener(async name => {
   if (name !== 'save-tab') return;
@@ -46,11 +54,12 @@ browser.commands.onCommand.addListener(async name => {
 
 // A freshly loaded content script asks what to draw. sender.tab.url — not the
 // page's own location.href, which SPAs rewrite out from under it.
-browser.runtime.onMessage.addListener((msg, sender) =>
-  msg === 'hello'
-    ? entryFor(sender.tab?.url).then(entry => entry && state(entry) === 'clean' ? entry : null)
-    : undefined
-);
+// sendResponse + `return true`, not a returned promise: Chrome ignores promises here.
+browser.runtime.onMessage.addListener((msg, sender, respond) => {
+  if (msg !== 'hello') return;
+  entryFor(sender.tab?.url).then(entry => respond(entry && state(entry) === 'clean' ? entry : null));
+  return true;
+});
 
 browser.tabs.onUpdated.addListener((tabId, ch, tab) => {
   // ch.url alone covers pushState/replaceState; status covers real loads.
@@ -74,8 +83,13 @@ async function adopt() {
     browser.tabs
       .sendMessage(t.id, 'ping')
       .then(() => paint(t.id, t.url))
-      // about:, view-source:, PDF viewer, AMO — no script allowed, badge only.
-      .catch(() => browser.tabs.executeScript(t.id, { file: 'content.js' }).catch(() => {}));
+      // about:, view-source:, PDF viewer, AMO, the Chrome Web Store — no script
+      // allowed there, badge only.
+      .catch(() =>
+        browser.scripting
+          .executeScript({ target: { tabId: t.id }, files: ['compat.js', 'content.js'] })
+          .catch(() => {})
+      );
   }
 }
 browser.runtime.onInstalled.addListener(adopt);

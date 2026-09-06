@@ -26,11 +26,13 @@
     pill.title = entry.note || '';
   }
 
-  browser.runtime.onMessage.addListener(msg => {
-    if (msg === 'ping') return Promise.resolve(true);
+  // respond(), not a returned promise: Chrome ignores promises from a listener.
+  // Every answer here is synchronous, so no `return true` is needed either.
+  browser.runtime.onMessage.addListener((msg, sender, respond) => {
+    if (msg === 'ping') return respond(true);
     if (msg === 'meta') {
       const m = s => document.querySelector(s)?.content?.trim() || '';
-      return Promise.resolve({
+      return respond({
         title: document.title || '',
         description:
           m('meta[name="description" i]') ||

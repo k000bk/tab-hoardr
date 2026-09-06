@@ -1,5 +1,6 @@
 .DS_Store
 *.xpi
+*.zip
 web-ext-artifacts/
 .amo-upload-uuid
 # Private notes on project
