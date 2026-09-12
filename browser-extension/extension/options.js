@@ -100,6 +100,32 @@ if (!browser.commands.update) {
   }
 }
 
+// --- Bulk save tabs ---------------------------------------------------------
+// Written as the user types — there is no Save button to forget. Lines are kept
+// as typed, so the field reads back the same; bulkTabs in lib.js does the matching.
+const skipPinned = document.getElementById('skipPinned');
+const exclude = document.getElementById('exclude');
+const bulk = document.getElementById('bulk');
+
+browser.storage.local.get(SETTINGS).then(r => {
+  const s = { ...DEFAULTS, ...r[SETTINGS] };
+  skipPinned.checked = s.skipPinned;
+  exclude.value = s.exclude.join('\n');
+});
+
+let bulkTimer;
+const saveSettings = () => {
+  clearTimeout(bulkTimer);
+  bulkTimer = setTimeout(async () => {
+    const list = exclude.value.split('\n').map(s => s.trim()).filter(Boolean);
+    await browser.storage.local.set({ [SETTINGS]: { skipPinned: skipPinned.checked, exclude: list } });
+    bulk.textContent = `Saved — ${list.length} address${list.length === 1 ? '' : 'es'} excluded.`;
+    bulk.className = 'ok';
+  }, 300);
+};
+skipPinned.addEventListener('change', saveSettings);
+exclude.addEventListener('input', saveSettings);
+
 // --- Update check -----------------------------------------------------------
 const version = browser.runtime.getManifest().version;
 const upd = document.getElementById('upd');
@@ -133,7 +159,8 @@ check.addEventListener('click', async () => {
 // done in the wrong order — Remove, then Install — therefore loses every saved
 // tab, and no undo exists inside the browser. This is the way back.
 // Records are copied whole, exportedAt included, so a restored tab is not
-// re-exported and is not wrongly reported as new.
+// re-exported and is not wrongly reported as new. The bulk-save settings ride
+// along, because a reinstall wipes the exclusion list too.
 const data = document.getElementById('data');
 const restoreFile = document.getElementById('restoreFile');
 const report = (text, cls = '') => { data.textContent = text; data.className = cls; };
@@ -143,21 +170,22 @@ document.getElementById('backup').addEventListener('click', async () => {
   const store = await browser.storage.local.get(null);
   const entries = Object.fromEntries(Object.entries(store).filter(([k]) => k.startsWith('t:')));
   const n = Object.keys(entries).length;
-  if (!n) return report('There is nothing to back up yet.', 'err');
+  const settings = store[SETTINGS];
+  if (!n && !settings) return report('There is nothing to back up yet.', 'err');
 
   const s = new Date(), p = v => String(v).padStart(2, '0');
   const name =
     `${s.getFullYear()}${p(s.getMonth() + 1)}${p(s.getDate())}` +
     `-${p(s.getHours())}${p(s.getMinutes())}_hoardr-backup.json`;
   const url = URL.createObjectURL(new Blob(
-    [JSON.stringify({ tabHoardrBackup: 1, at: s.toISOString(), entries }, null, 2)],
+    [JSON.stringify({ tabHoardrBackup: 1, at: s.toISOString(), entries, settings }, null, 2)],
     { type: 'application/json' }
   ));
   report('Backing up…');
   try {
     const id = await browser.downloads.download({ url, filename: name, saveAs: false });
     if (!(await settled(id))) throw new Error('The browser did not finish the download.');
-    report(`Backed up ${n} saved tab${plural(n)} to ${name}`, 'ok');
+    report(`Backed up ${n} saved tab${plural(n)}${settings ? ' and your settings' : ''} to ${name}`, 'ok');
   } catch (err) {
     report(err.message || String(err), 'err');
   } finally {
@@ -179,7 +207,8 @@ restoreFile.addEventListener('change', async () => {
     return report('That file is not readable JSON.', 'err');
   }
   const found = Object.values(parsed?.entries || {}).map(restoreRecord).filter(Boolean);
-  if (!found.length) return report('No saved tabs found in that file.', 'err');
+  const theirs = restoreSettings(parsed?.settings);
+  if (!found.length && !theirs) return report('No saved tabs found in that file.', 'err');
 
   // Newest wins, per tab. Restoring an old backup never undoes newer work.
   const store = await browser.storage.local.get(null);
@@ -192,6 +221,20 @@ restoreFile.addEventListener('change', async () => {
     else if (rec.updatedAt > (mine.updatedAt || 0)) { write[key] = rec; refreshed++; }
     else kept++;
   }
+
+  // Settings follow the same rule — restoring adds, it never takes away. The
+  // exclusion lists are joined. Skip pinned tabs comes from the file only when
+  // this install has never saved a choice of its own, which is the reinstall case.
+  if (theirs) {
+    const mine = store[SETTINGS];
+    write[SETTINGS] = {
+      skipPinned: mine ? mine.skipPinned : theirs.skipPinned,
+      exclude: [...new Set([...(mine?.exclude || []), ...theirs.exclude])]
+    };
+    skipPinned.checked = write[SETTINGS].skipPinned;
+    exclude.value = write[SETTINGS].exclude.join('\n');
+  }
+
   if (Object.keys(write).length) await browser.storage.local.set(write);
-  report(`Restored — ${added} added, ${refreshed} updated, ${kept} left alone.`, 'ok');
+  report(`Restored — ${added} added, ${refreshed} updated, ${kept} left alone${theirs ? ', settings merged' : ''}.`, 'ok');
 });

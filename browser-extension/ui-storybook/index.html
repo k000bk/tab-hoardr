@@ -1023,7 +1023,7 @@
                 <div class="host">example.com/articles/building-better-tools</div>
                 <div class="menu-stack">
                   <button class="ui-button accent"><svg><use href="#i-plus"/></svg>Save current tab</button>
-                  <button class="ui-button"><svg><use href="#i-stack"/></svg>Save all opened tabs (7)</button>
+                  <button class="ui-button"><svg><use href="#i-stack"/></svg>Bulk save tabs (7)</button>
                   <button class="ui-button" disabled><svg><use href="#i-download"/></svg>Export saved tabs</button>
                   <button class="ui-button" disabled><svg><use href="#i-x"/></svg>Close hoarded tabs</button>
                   <button class="ui-button"><svg><use href="#i-settings"/></svg>Options</button>
@@ -1086,7 +1086,7 @@
                 <div class="host">about:addons</div>
                 <div class="menu-stack">
                   <button class="ui-button accent" disabled><svg><use href="#i-plus"/></svg>Save current tab</button>
-                  <button class="ui-button" disabled><svg><use href="#i-stack"/></svg>All opened tabs are saved</button>
+                  <button class="ui-button" disabled><svg><use href="#i-stack"/></svg>Bulk save tabs (0)</button>
                   <button class="ui-button" disabled><svg><use href="#i-download"/></svg>Export saved tabs</button>
                   <button class="ui-button" disabled><svg><use href="#i-x"/></svg>Close hoarded tabs</button>
                   <button class="ui-button"><svg><use href="#i-settings"/></svg>Options</button>
@@ -1222,6 +1222,15 @@
                     <div class="setting-row">
                       <div><div class="setting-name">Save current tab</div><div class="setting-description">Click the shortcut field, then press a new combination.</div></div>
                       <div class="setting-actions"><input class="shortcut-input" readonly value="⌃ ⇧ U" aria-label="Current shortcut"><button class="ui-button compact">Reset</button></div>
+                    </div>
+                    <div class="setting-row">
+                      <div><div class="setting-name">Skip pinned tabs</div><div class="setting-description">Bulk save tabs leaves out tabs you pinned in the browser.</div></div>
+                      <div class="setting-actions"><span class="ui-checkbox checked"><svg><use href="#i-check"/></svg></span></div>
+                    </div>
+                    <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                      <div><div class="setting-name">Exclusion list</div><div class="setting-description">One address per line. Only that exact page is skipped: reddit.com skips the front page, not a post on it.</div></div>
+                      <textarea class="ui-textarea" aria-label="Addresses to skip, one per line">reddit.com
+https://app.slack.com/client/T0123/C0456</textarea>
                     </div>
                     <div class="setting-row">
                       <div><div class="setting-name">Creator</div><div class="setting-description">Source code, new versions and a place to report a problem.</div></div>

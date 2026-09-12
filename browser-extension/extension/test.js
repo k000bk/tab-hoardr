@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { normalize, state, isNewer, restoreRecord, newEntry, content, savedTabView } = require('./lib.js');
+const { normalize, state, isNewer, restoreRecord, newEntry, content, savedTabView, bulkTabs, restoreSettings } = require('./lib.js');
 
 const same = (a, b) => assert.strictEqual(normalize(a), normalize(b), `${a} !== ${b}`);
 
@@ -118,3 +118,28 @@ assert.strictEqual(last.items.length, 115);
 assert.strictEqual(last.remaining, 0);
 
 console.log('ok');
+
+// Bulk save: pinned tabs are skipped by default, excluded pages by exact match.
+const open = [
+  { url: 'https://app.slack.com/client/T1/C1' },
+  { url: 'https://www.reddit.com/?utm_source=x' },
+  { url: 'https://reddit.com/r/rust/comments/1' },
+  { url: 'https://mail.example.com/', pinned: true },
+  { url: 'about:addons' }
+];
+const kept = s => bulkTabs(open, s).map(t => t.url);
+assert.deepStrictEqual(kept(undefined), [open[0].url, open[1].url, open[2].url]);
+assert.deepStrictEqual(kept({ skipPinned: false }), [open[0].url, open[1].url, open[2].url, open[3].url]);
+// `reddit.com` is the front page only — the post survives. Scheme, www and
+// tracking params do not break the match.
+assert.deepStrictEqual(kept({ exclude: ['reddit.com', 'https://app.slack.com/client/T1/C1'] }), [open[2].url]);
+assert.deepStrictEqual(kept({ exclude: ['http://reddit.com/'] }), [open[0].url, open[2].url]);
+// A different Slack channel is a different page.
+assert.deepStrictEqual(kept({ exclude: ['app.slack.com/client/T1/C2'] }), [open[0].url, open[1].url, open[2].url]);
+
+// Settings from a backup file: junk in, nothing or two clean fields out.
+assert.strictEqual(restoreSettings(undefined), null);
+assert.strictEqual(restoreSettings('x'), null);
+assert.deepStrictEqual(restoreSettings({ skipPinned: 0, exclude: [' reddit.com ', '', 42], evil: 1 }),
+  { skipPinned: false, exclude: ['reddit.com', '42'] });
+assert.deepStrictEqual(restoreSettings({}), { skipPinned: true, exclude: [] });

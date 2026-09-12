@@ -60,8 +60,8 @@ for s in 16 32 48 128; do rsvg-convert -w $s -h $s icon.svg -o icon-$s.png; done
 Two entry points, on purpose:
 
 - **Ctrl+S** (Mac: **Control+S**) — opens the **editor** for the active tab in a small standalone window, centred on the browser window. It saves the tab on open (url, title, meta description), then title, description, note and tags are all editable. Enter or **Save** closes it, Esc too, **Forget** deletes the entry (also available straight from the menu). Being a real window, it does not vanish when it loses focus.
-- **Ctrl+Shift+S** (Mac: **Control+Shift+S**) — **saves every open tab in the window at once**, with no editor and no questions. Close the tabs you do not want first, then hoard the rest in one keypress. A tab that is already saved is left alone, so a note is never overwritten. Each new record gets the page's own title and description; the notes and tags stay empty until you open the editor on the ones that deserve them.
-- **Toolbar icon** — opens the **menu**: a big badge for the current tab's state (*not saved* / *saved* / *hoarded*), then **Save current tab** / **Edit saved tab** — the same editor, drawn inside the panel itself rather than as a window — **Save all opened tabs (N)**, **Export saved tabs**, **Close hoarded tabs**, **Options**, and a count of what's ready to export.
+- **Ctrl+Shift+S** (Mac: **Control+Shift+S**) — **saves every open tab in the window at once**, with no editor and no questions. Close the tabs you do not want first, then hoard the rest in one keypress. A tab that is already saved is left alone, so a note is never overwritten. Each new record gets the page's own title and description; the notes and tags stay empty until you open the editor on the ones that deserve them. Two things are left out, both set in **Options → Bulk save tabs**: tabs you pinned in the browser (on by default), and any page on the **exclusion list**. The list matches the exact page — `reddit.com` skips the front page, not a post on it — and ignores `www`, a trailing slash, tracking params and http against https.
+- **Toolbar icon** — opens the **menu**: a big badge for the current tab's state (*not saved* / *saved* / *hoarded*), then **Save current tab** / **Edit saved tab** — the same editor, drawn inside the panel itself rather than as a window — **Bulk save tabs (N)** (greyed out at 0), **Export saved tabs**, **Close hoarded tabs**, **Options**, and a count of what's ready to export.
 
 Rebind either shortcut in **Options**. **Ctrl+S** and **Ctrl+Shift+S** are the browser's own *Save Page As* — the add-on takes them over where the browser allows it, and on the platforms where it does not the field says *Not set* and you pick another. In Firefox the field records the keys; in Chrome it opens `chrome://extensions/shortcuts`, which does the same job. If a combination does nothing, the browser or another add-on already owns it — the settings page can't detect that, pick another.
 
@@ -75,15 +75,15 @@ The popup asks GitHub for the latest release tag and compares it with the manife
 
 ## Back up and restore
 
-Options → **Your data**. **Back up** writes every `t:` record verbatim to `YYYYMMDD-HHmm_hoardr-backup.json` in Downloads; **Restore** reads one back.
+Options → **Your data**. **Back up** writes every `t:` record verbatim, plus the bulk-save `settings`, to `YYYYMMDD-HHmm_hoardr-backup.json` in Downloads; **Restore** reads one back.
 
 ```json
-{ "tabHoardrBackup": 1, "at": "…", "entries": { "t:https://…": { …record… } } }
+{ "tabHoardrBackup": 1, "at": "…", "entries": { "t:https://…": { …record… } }, "settings": { "skipPinned": true, "exclude": ["reddit.com"] } }
 ```
 
 Not the same file as an export. A backup keeps `exportedAt` and `normUrl`, so a restored tab returns in the state it left — a hoarded tab is still hoarded and is not exported again. An export is for Obsidian and drops both.
 
-Restore merges, newest `updatedAt` per tab wins, so running it twice is a no-op and an old backup never undoes newer work. `restoreRecord()` in `lib.js` rebuilds each record field by field and re-derives the storage key from the record's own `url`, so nothing a hand-edited file claims can write outside `t:<normalized url>`.
+Restore merges, newest `updatedAt` per tab wins, so running it twice is a no-op and an old backup never undoes newer work. `restoreRecord()` in `lib.js` rebuilds each record field by field and re-derives the storage key from the record's own `url`, so nothing a hand-edited file claims can write outside `t:<normalized url>`. Settings merge the same way — nothing is taken away: the two exclusion lists are joined, and **Skip pinned tabs** comes from the file only when this install has never saved a choice of its own (the reinstall case). `restoreSettings()` keeps the two known fields and drops everything else. Backups made before this version have no `settings` and restore as before.
 
 ## Export shape
 

@@ -59,7 +59,7 @@
         "default": "Ctrl+Shift+S",
         "mac": "MacCtrl+Shift+S"
       },
-      "description": "Save all opened tabs"
+      "description": "Bulk save tabs"
     }
   },
   "options_ui": {

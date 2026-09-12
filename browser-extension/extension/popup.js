@@ -38,15 +38,13 @@ async function refresh() {
   $('save').disabled = !key;
   $('forget').hidden = !entry;
 
-  // What the bulk button would actually write: hoardable, not saved yet, and
-  // counted once per page — two tabs of one article are one record.
-  const unsaved = new Set((await browser.tabs.query({ currentWindow: true }))
-    .filter(t => hoardable(t.url) && !(KEY(normalize(t.url)) in store))
+  // What the bulk button would actually write: allowed by the Options, not
+  // saved yet, and counted once per page — two tabs of one article are one record.
+  const unsaved = new Set(bulkTabs(await browser.tabs.query({ currentWindow: true }), store[SETTINGS])
+    .filter(t => !(KEY(normalize(t.url)) in store))
     .map(t => normalize(t.url))).size;
   $('saveAll').disabled = !unsaved;
-  $('saveAllLabel').textContent = unsaved
-    ? `Save all opened tabs (${unsaved})`
-    : 'All opened tabs are saved';
+  $('saveAllLabel').textContent = `Bulk save tabs (${unsaved})`;
 
   const entries = await all(store);
   const pending = entries.filter(e => state(e) !== 'clean');

@@ -25,9 +25,13 @@
     .setting-actions { display: flex; align-items: center; gap: 8px; }
     .rec { width: 160px; height: 30px; padding: 0 9px; border: 1px solid var(--border); border-radius: var(--radius-s); outline: none; background: var(--background-primary); box-shadow: var(--input-shadow); color: var(--text-normal); font: 500 12px/1 var(--font-mono); text-align: center; cursor: pointer; }
     .rec.listening { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); color: var(--accent-hover); }
-    #msg, #upd, #data { max-width: 650px; margin-top: 8px; color: var(--text-muted); font-size: 12px; }
+    .setting-row.stacked { flex-direction: column; align-items: stretch; gap: 10px; }
+    label.setting-row { cursor: pointer; }
+    #skipPinned { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    #exclude { min-height: 96px; font: 12px/1.5 var(--font-mono); }
+    #msg, #bulk, #upd, #data { max-width: 650px; margin-top: 8px; color: var(--text-muted); font-size: 12px; }
     #msg.listening { color: var(--accent-hover); }
-    #msg.ok, #upd.ok, #data.ok { color: var(--green); }
+    #msg.ok, #bulk.ok, #upd.ok, #data.ok { color: var(--green); }
     #msg.err, #upd.err, #data.err { color: var(--red); }
     @media (max-width: 620px) {
       .settings-shell { grid-template-columns: 1fr; }
@@ -54,20 +58,33 @@
           <div class="setting-actions"><input class="rec" aria-label="Shortcut to save the current tab" readonly value="…"><button class="reset" type="button">Reset</button></div>
         </div>
         <div class="setting-row shortcut" data-command="save-all-tabs">
-          <div><div class="setting-name">Save all opened tabs</div><div class="setting-description">Click the shortcut field, then press a new combination.</div></div>
-          <div class="setting-actions"><input class="rec" aria-label="Shortcut to save all opened tabs" readonly value="…"><button class="reset" type="button">Reset</button></div>
+          <div><div class="setting-name">Bulk save tabs</div><div class="setting-description">Click the shortcut field, then press a new combination.</div></div>
+          <div class="setting-actions"><input class="rec" aria-label="Shortcut to bulk save tabs" readonly value="…"><button class="reset" type="button">Reset</button></div>
         </div>
       </div>
       <div id="msg" role="status" aria-live="polite">Needs Control, Alt or Command, or a function key.</div>
 
+      <h2 class="settings-section">Bulk save tabs</h2>
+      <div class="setting-card">
+        <label class="setting-row">
+          <div><div class="setting-name">Skip pinned tabs</div><div class="setting-description">Tabs you pinned in the browser — mail, chat, calendar — are left out.</div></div>
+          <div class="setting-actions"><input type="checkbox" id="skipPinned" checked></div>
+        </label>
+        <div class="setting-row stacked">
+          <div><div class="setting-name">Exclusion list</div><div class="setting-description">One address per line. Only that exact page is skipped: <code>reddit.com</code> skips the front page, not a post on it.</div></div>
+          <textarea id="exclude" spellcheck="false" aria-label="Addresses to skip, one per line" placeholder="reddit.com&#10;https://app.slack.com/client/T0123/C0456"></textarea>
+        </div>
+      </div>
+      <div id="bulk" role="status" aria-live="polite"></div>
+
       <h2 class="settings-section">Your data</h2>
       <div class="setting-card">
         <div class="setting-row">
-          <div><div class="setting-name">Back up saved tabs</div><div class="setting-description">Write every saved tab to one file in Downloads. Do this before you reinstall the add-on.</div></div>
+          <div><div class="setting-name">Back up saved tabs</div><div class="setting-description">Write every saved tab and your bulk-save settings to one file in Downloads. Do this before you reinstall the add-on.</div></div>
           <div class="setting-actions"><button id="backup" type="button"><svg class="icon" aria-hidden="true"><use href="icons.svg#archive"></use></svg>Back up</button></div>
         </div>
         <div class="setting-row">
-          <div><div class="setting-name">Restore from a backup</div><div class="setting-description">Read a backup file back in. It adds to what you have — a tab you saved more recently is kept.</div></div>
+          <div><div class="setting-name">Restore from a backup</div><div class="setting-description">Read a backup file back in. It adds to what you have — a tab you saved more recently is kept, and exclusion lists are joined.</div></div>
           <div class="setting-actions"><button id="restore" type="button">Restore</button><input id="restoreFile" type="file" accept="application/json,.json" hidden></div>
         </div>
       </div>

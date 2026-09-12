@@ -89,6 +89,13 @@ const restoreRecord = e => !e || typeof e.url !== 'string' || !hoardable(e.url) 
   exportedAt: Number(e.exportedAt) || null
 });
 
+// The settings in a backup get the same treatment: rebuilt field by field, and
+// only the two fields that exist. Returns null when the file carries none.
+const restoreSettings = s => !s || typeof s !== 'object' ? null : ({
+  skipPinned: s.skipPinned === undefined ? true : Boolean(s.skipPinned),
+  exclude: Array.isArray(s.exclude) ? s.exclude.map(v => String(v).trim()).filter(Boolean) : []
+});
+
 // A download reports "started", not "written". Both callers tell the user their
 // file is safe, so both wait for the real verdict.
 // ponytail: polls download state instead of onChanged — no listener race, 10s ceiling.
@@ -139,13 +146,33 @@ const newEntry = (tab, meta) => {
   };
 };
 
+// Bulk-save settings live under one key outside the `t:` range, so nothing that
+// walks saved tabs ever meets them. Skipping browser-pinned tabs is the default:
+// those are the mail, chat and calendar tabs that stay open for good.
+const SETTINGS = 'settings';
+const DEFAULTS = { skipPinned: true, exclude: [] };
+
+// Exact page, not prefix: `reddit.com` excludes the front page and no post on
+// it. Both sides go through normalize, so www, a trailing slash, tracking params
+// and http against https cannot break a match. A line typed without a scheme is
+// read as https.
+const bare = u => normalize(/^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : 'https://' + u).replace(/^https?:\/\//i, '');
+
+// The tabs a bulk save may write. Pure, and shared by the popup's count and the
+// save itself, so the number on the button is the number that gets saved.
+const bulkTabs = (tabs, settings) => {
+  const s = { ...DEFAULTS, ...settings };
+  const skip = new Set(s.exclude.map(bare));
+  return tabs.filter(t => hoardable(t.url) && !(s.skipPinned && t.pinned) && !skip.has(bare(t.url)));
+};
+
 // Bulk save, no editor: the user closes the tabs they do not want, then hoards
 // the rest in one keypress and edits the few that matter later. A tab that is
 // already saved is left exactly as it is — this never overwrites a note.
 // Metadata is read from all of them at once, so one slow page does not hold up
 // the others. Duplicates collapse, because two tabs of one page share a key.
 async function saveAll(tabs) {
-  const open = tabs.filter(t => hoardable(t.url));
+  const open = bulkTabs(tabs, (await browser.storage.local.get(SETTINGS))[SETTINGS]);
   const store = await browser.storage.local.get(open.map(t => KEY(normalize(t.url))));
   const todo = open.filter(t => !store[KEY(normalize(t.url))]);
   const entries = await Promise.all(todo.map(async t => newEntry(t, await readMeta(t.id))));
@@ -179,4 +206,4 @@ async function checkUpdate(force) {
   return result;
 }
 
-if (typeof module !== 'undefined') module.exports = { normalize, KEY, state, hoardable, isNewer, restoreRecord, newEntry, content, savedTabView };
+if (typeof module !== 'undefined') module.exports = { normalize, KEY, state, hoardable, isNewer, restoreRecord, newEntry, content, savedTabView, bulkTabs, restoreSettings };

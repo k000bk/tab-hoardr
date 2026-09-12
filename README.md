@@ -33,14 +33,14 @@ So install the new file *on top of* the old one. Never press **Remove** first.
 - **Firefox and Zen.** Gear icon → **Install Add-on From File** → pick the new `.xpi`. It has the same add-on ID, so the browser counts it as an update and keeps your tabs.
 - **Chrome, Brave, Arc and Edge.** Unzip the new files over the same folder you loaded before, then click the reload arrow on the add-on's card in `chrome://extensions`. Keep the folder where it is. **Remove** followed by a fresh **Load unpacked** wipes your tabs.
 
-Not sure? Back up first. **Options → Your data → Back up** writes every saved tab to one file in Downloads. **Restore** reads that file back in. Restoring adds to what you have and never overwrites a tab you saved more recently, so it is safe to run twice.
+Not sure? Back up first. **Options → Your data → Back up** writes every saved tab, and your bulk-save settings, to one file in Downloads. **Restore** reads that file back in. Restoring adds to what you have and never overwrites a tab you saved more recently, so it is safe to run twice.
 
 To build and use the code yourself, read [browser-extension/extension/README.md](browser-extension/extension/README.md).
 
 ## Roadmap
 - [ ] Add ability to search, browse and manage hoarded tabs (bookmarks)
 - [ ] Add Obsidian workflow info
-- [x] Save all opened tabs in one keypress
+- [x] Bulk save tabs in one keypress
 - [x] Manifest V3 compatibility
 - [x] Firefox and ZEN compatible extension that exports .json
 - [x] Chrome, Brave and Arc compatible
