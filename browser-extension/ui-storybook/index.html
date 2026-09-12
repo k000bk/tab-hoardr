@@ -756,7 +756,9 @@
     .library-heading { min-width: 0; }
     .library-title { font-size: var(--font-ui-small); font-weight: 600; }
     .library-count { margin-top: 1px; color: var(--text-faint); font-size: var(--font-ui-smallest); }
-    .library-header .ui-button { width: auto; margin-left: auto; }
+    .library-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .library-header .ui-button { width: auto; }
+    .library-header .ui-button.is-active { color: var(--accent-hover); box-shadow: inset 0 0 0 1px hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.28); }
 
     .library-content {
       width: min(820px, 100%);
@@ -781,23 +783,9 @@
 
     .search-field .ui-input {
       height: 40px;
-      padding: 0 38px;
+      padding: 0 12px 0 38px;
       border-radius: var(--radius-m);
       font-size: var(--font-ui-small);
-    }
-
-    .search-shortcut {
-      position: absolute;
-      top: 50%;
-      right: 10px;
-      padding: 3px 6px;
-      transform: translateY(-50%);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-s);
-      background: var(--background-secondary);
-      color: var(--text-faint);
-      font: 10px/1 var(--font-mono);
-      pointer-events: none;
     }
 
     .library-tools {
@@ -827,6 +815,45 @@
     .ui-select:hover { border-color: var(--border-hover); box-shadow: var(--input-shadow-hover); }
     .ui-select:focus-visible { border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--border-focus); }
 
+    .display-menu { position: relative; }
+    .display-menu summary { list-style: none; }
+    .display-menu summary::-webkit-details-marker { display: none; }
+    .display-menu summary svg { width: 13px; height: 13px; transition: transform 120ms ease; }
+    .display-menu[open] summary svg { transform: rotate(90deg); }
+
+    .display-options {
+      position: absolute;
+      z-index: 5;
+      top: calc(100% + 5px);
+      right: 0;
+      width: 178px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-m);
+      background: var(--background-raised);
+      box-shadow: var(--shadow-s);
+    }
+
+    .display-option {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 7px;
+      border-radius: var(--radius-s);
+      color: var(--text-muted);
+      font-size: var(--font-ui-smallest);
+      cursor: pointer;
+    }
+
+    .display-option:hover { background: var(--hover); color: var(--text-normal); }
+    .display-option.is-disabled { opacity: 0.5; cursor: not-allowed; }
+    .display-option.is-disabled:hover { background: transparent; color: var(--text-muted); }
+    .display-option input { position: absolute; opacity: 0; pointer-events: none; }
+    .display-option input:checked + .ui-checkbox { border-color: var(--accent); background: var(--accent); }
+    .display-option input:checked + .ui-checkbox svg { display: block; }
+    .display-option input:focus-visible + .ui-checkbox { box-shadow: 0 0 0 2px var(--border-focus); }
+
     .saved-list {
       overflow: hidden;
       border: 1px solid var(--border);
@@ -834,7 +861,7 @@
       background: var(--background-primary-alt);
     }
 
-    .saved-item { padding: 18px 20px 17px; }
+    .saved-item { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 17px; }
     .saved-item + .saved-item { border-top: 1px solid var(--border); }
     .saved-item:hover { background: var(--hover); }
 
@@ -845,15 +872,51 @@
       align-items: start;
     }
 
+    .select-mode .saved-item-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+
+    .saved-item-select {
+      position: relative;
+      display: none;
+      padding-top: 2px;
+      cursor: pointer;
+    }
+
+    .select-mode .saved-item-select { display: grid; }
+    .saved-item-select input { position: absolute; opacity: 0; pointer-events: none; }
+    .saved-item-select input:checked + .ui-checkbox { border-color: var(--accent); background: var(--accent); }
+    .saved-item-select input:checked + .ui-checkbox svg { display: block; }
+    .saved-item-select input:focus-visible + .ui-checkbox { box-shadow: 0 0 0 2px var(--border-focus); }
+
+    .saved-item-main { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 3px; }
+
     .saved-item-title {
-      overflow: hidden;
-      margin-bottom: 3px;
+      display: inline-flex;
+      max-width: 100%;
+      align-items: center;
+      gap: 6px;
       color: var(--text-normal);
       font-size: var(--font-ui-medium);
       font-weight: 600;
+      text-decoration: none;
+    }
+
+    .saved-item-title-text {
+      overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
+    .saved-item-title svg {
+      width: 14px;
+      height: 14px;
+      flex: none;
+      opacity: 0;
+      transition: opacity 120ms ease;
+    }
+
+    .saved-item:hover .saved-item-title svg,
+    .saved-item-title:focus-visible svg { opacity: 1; }
+    .saved-item-title:focus-visible { border-radius: 2px; outline: 2px solid var(--border-focus); outline-offset: 2px; }
 
     .saved-item-url {
       overflow: hidden;
@@ -864,10 +927,11 @@
     }
 
     .saved-item-date { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
-    .saved-item-description { margin: 11px 0 8px; color: var(--text-muted); font-size: var(--font-ui-smaller); }
+    .saved-item-description { margin: 0; color: var(--text-muted); font-size: var(--font-ui-smaller); }
 
     .saved-item-note {
-      margin-bottom: 10px;
+      display: flex;
+      gap: 5px;
       padding: 8px 10px;
       border-left: 2px solid hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.45);
       border-radius: 0 var(--radius-s) var(--radius-s) 0;
@@ -876,17 +940,23 @@
       font-size: var(--font-ui-smallest);
     }
 
-    .saved-item-note strong { margin-right: 5px; color: var(--text-normal); font-weight: 600; }
+    .saved-item-note strong { color: var(--text-normal); font-weight: 600; }
     .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
 
     .tag {
-      padding: 3px 7px;
+      padding: 3px 6px;
       border: 1px solid var(--border);
-      border-radius: 999px;
-      background: var(--background-primary);
-      color: var(--text-muted);
-      font-size: 11px;
+      border-radius: var(--radius-s);
+      background: var(--background-secondary);
+      color: var(--text-faint);
+      font: 10px/1 var(--font-mono);
     }
+
+    .hide-title .saved-item-title,
+    .hide-url .saved-item-url,
+    .hide-description .saved-item-description,
+    .hide-note .saved-item-note,
+    .hide-tags .tag-list { display: none; }
 
     .library-load {
       display: flex;
@@ -930,12 +1000,15 @@
       .article-preview { width: 92%; padding-inline: 22px; }
       .library-stage { padding: 10px; }
       .library-content { padding: 26px 14px 34px; }
-      .library-header { padding-inline: 14px; }
-      .library-header .ui-button { display: none; }
+      .library-header { min-height: 56px; padding: 9px 14px; }
+      .library-heading, .library-options-button { display: none; }
+      .library-actions { gap: 6px; }
       .library-tools { flex-wrap: wrap; padding-block: 9px; }
       .results-summary { width: 100%; }
       .saved-item { padding: 15px 14px; }
       .saved-item-head { grid-template-columns: 1fr; gap: 5px; }
+      .select-mode .saved-item-head { grid-template-columns: auto minmax(0, 1fr); }
+      .select-mode .saved-item-date { grid-column: 2; }
       .saved-item-date { white-space: normal; }
     }
 
@@ -1299,7 +1372,11 @@ https://app.slack.com/client/T0123/C0456</textarea>
               <header class="library-header">
                 <span class="app-logo"><svg><use href="#i-stack"/></svg></span>
                 <div class="library-heading"><div class="library-title">Tab Hoardr</div><div class="library-count">Saved tabs</div></div>
-                <button class="ui-button compact"><svg><use href="#i-settings"/></svg>Options</button>
+                <div class="library-actions">
+                  <button class="ui-button compact" type="button" data-select-mode aria-pressed="false">Select mode</button>
+                  <button class="ui-button compact danger-soft" type="button" data-forget-selected hidden disabled><svg><use href="#i-trash"/></svg>Forget selected tabs</button>
+                  <button class="ui-button compact library-options-button" type="button"><svg><use href="#i-settings"/></svg>Options</button>
+                </div>
               </header>
 
               <div class="library-content">
@@ -1309,7 +1386,6 @@ https://app.slack.com/client/T0123/C0456</textarea>
                 <div class="search-field">
                   <svg><use href="#i-search"/></svg>
                   <input class="ui-input" type="search" placeholder="Search titles, descriptions, notes and tags" aria-label="Search saved tabs">
-                  <span class="search-shortcut">⌘ K</span>
                 </div>
 
                 <div class="library-tools">
@@ -1323,36 +1399,50 @@ https://app.slack.com/client/T0123/C0456</textarea>
                     <option selected>Newest first</option>
                     <option>Oldest first</option>
                   </select>
+                  <span class="sort-label">Display</span>
+                  <details class="display-menu">
+                    <summary class="ui-button compact"><span data-display-summary>All fields</span><svg><use href="#i-chevron"/></svg></summary>
+                    <div class="display-options">
+                      <label class="display-option"><input type="checkbox" value="title" checked><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span>Title</label>
+                      <label class="display-option"><input type="checkbox" value="url" checked><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span>URL</label>
+                      <label class="display-option"><input type="checkbox" value="description" checked><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span>Meta description</label>
+                      <label class="display-option"><input type="checkbox" value="note" checked><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span>Note</label>
+                      <label class="display-option"><input type="checkbox" value="tags" checked><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span>Tags</label>
+                    </div>
+                  </details>
                 </div>
 
                 <div class="saved-list">
                   <article class="saved-item">
                     <div class="saved-item-head">
-                      <div><div class="saved-item-title">Building browser tools that stay out of the way</div><div class="saved-item-url">example.com/articles/building-better-tools</div></div>
+                      <label class="saved-item-select"><input type="checkbox" aria-label="Select Building browser tools that stay out of the way"><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span></label>
+                      <div class="saved-item-main"><a class="saved-item-title" href="https://example.com/articles/building-better-tools" target="_blank" rel="noopener noreferrer"><span class="saved-item-title-text">Building browser tools that stay out of the way</span><svg aria-hidden="true"><use href="#i-link"/></svg></a><div class="saved-item-url">example.com/articles/building-better-tools</div></div>
                       <div class="saved-item-date">Added today · Modified today</div>
                     </div>
                     <p class="saved-item-description">A practical guide to making small tools that reduce friction without taking over the page.</p>
-                    <div class="saved-item-note"><strong>Note</strong>Reference for the Obsidian capture workflow. Compare the interaction details.</div>
+                    <div class="saved-item-note"><strong>Note</strong><span>Reference for the Obsidian capture workflow. Compare the interaction details.</span></div>
                     <div class="tag-list"><span class="tag">productivity</span><span class="tag">browser</span><span class="tag">obsidian</span></div>
                   </article>
 
                   <article class="saved-item">
                     <div class="saved-item-head">
-                      <div><div class="saved-item-title">Local-first software: you own your data, in spite of the cloud</div><div class="saved-item-url">inkandswitch.com/local-first</div></div>
+                      <label class="saved-item-select"><input type="checkbox" aria-label="Select Local-first software: you own your data, in spite of the cloud"><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span></label>
+                      <div class="saved-item-main"><a class="saved-item-title" href="https://www.inkandswitch.com/local-first/" target="_blank" rel="noopener noreferrer"><span class="saved-item-title-text">Local-first software: you own your data, in spite of the cloud</span><svg aria-hidden="true"><use href="#i-link"/></svg></a><div class="saved-item-url">inkandswitch.com/local-first</div></div>
                       <div class="saved-item-date">Added Sep 4 · Modified Sep 5</div>
                     </div>
                     <p class="saved-item-description">A set of principles for software that gives users ownership and control of their data.</p>
-                    <div class="saved-item-note"><strong>Note</strong>Use this when planning the backup and restore model.</div>
+                    <div class="saved-item-note"><strong>Note</strong><span>Use this when planning the backup and restore model.</span></div>
                     <div class="tag-list"><span class="tag">local-first</span><span class="tag">data</span><span class="tag">reference</span></div>
                   </article>
 
                   <article class="saved-item">
                     <div class="saved-item-head">
-                      <div><div class="saved-item-title">Designing for interruption</div><div class="saved-item-url">notes.example.org/designing-for-interruption</div></div>
+                      <label class="saved-item-select"><input type="checkbox" aria-label="Select Designing for interruption"><span class="ui-checkbox"><svg><use href="#i-check"/></svg></span></label>
+                      <div class="saved-item-main"><a class="saved-item-title" href="https://notes.example.org/designing-for-interruption" target="_blank" rel="noopener noreferrer"><span class="saved-item-title-text">Designing for interruption</span><svg aria-hidden="true"><use href="#i-link"/></svg></a><div class="saved-item-url">notes.example.org/designing-for-interruption</div></div>
                       <div class="saved-item-date">Added Aug 29 · Modified Aug 29</div>
                     </div>
                     <p class="saved-item-description">Notes on preserving attention when a tool must ask the user to make a decision.</p>
-                    <div class="saved-item-note"><strong>Note</strong>No note added.</div>
+                    <div class="saved-item-note"><strong>Note</strong><span>No note added.</span></div>
                     <div class="tag-list"><span class="tag">design</span><span class="tag">ux</span></div>
                   </article>
                 </div>
@@ -1488,6 +1578,71 @@ https://app.slack.com/client/T0123/C0456</textarea>
         }
       });
     }
+
+    const library = document.querySelector('.library-surface');
+    const selectModeButton = library.querySelector('[data-select-mode]');
+    const forgetSelectedButton = library.querySelector('[data-forget-selected]');
+    const resultsSummary = library.querySelector('.results-summary');
+    const loadSummary = library.querySelector('.library-load span');
+    const displayChoices = library.querySelectorAll('.display-option input');
+    const displaySummary = library.querySelector('[data-display-summary]');
+    let shownCount = 50;
+    let totalCount = 2438;
+
+    function selectedItems() {
+      return [...library.querySelectorAll('.saved-item')].filter((item) => item.querySelector('.saved-item-select input').checked);
+    }
+
+    function updateSelection() {
+      forgetSelectedButton.disabled = selectedItems().length === 0;
+    }
+
+    const titleChoice = [...displayChoices].find((choice) => choice.value === 'title');
+    const urlChoice = [...displayChoices].find((choice) => choice.value === 'url');
+
+    function updateRequiredDisplayChoices() {
+      titleChoice.disabled = titleChoice.checked && !urlChoice.checked;
+      urlChoice.disabled = urlChoice.checked && !titleChoice.checked;
+      titleChoice.closest('.display-option').classList.toggle('is-disabled', titleChoice.disabled);
+      urlChoice.closest('.display-option').classList.toggle('is-disabled', urlChoice.disabled);
+    }
+
+    selectModeButton.addEventListener('click', () => {
+      const active = library.classList.toggle('select-mode');
+      selectModeButton.classList.toggle('is-active', active);
+      selectModeButton.setAttribute('aria-pressed', String(active));
+      forgetSelectedButton.hidden = !active;
+      if (!active) {
+        for (const checkbox of library.querySelectorAll('.saved-item-select input')) checkbox.checked = false;
+      }
+      updateSelection();
+    });
+
+    library.addEventListener('change', (event) => {
+      if (event.target.matches('.saved-item-select input')) updateSelection();
+    });
+
+    forgetSelectedButton.addEventListener('click', () => {
+      const items = selectedItems();
+      for (const item of items) item.remove();
+      shownCount -= items.length;
+      totalCount -= items.length;
+      resultsSummary.textContent = `Showing ${shownCount} of ${totalCount.toLocaleString('en-US')} saved tabs`;
+      loadSummary.textContent = `${shownCount} loaded · ${(totalCount - shownCount).toLocaleString('en-US')} remaining`;
+      updateSelection();
+    });
+
+    for (const choice of displayChoices) {
+      choice.addEventListener('change', () => {
+        if (!titleChoice.checked && !urlChoice.checked) choice.checked = true;
+        library.classList.toggle(`hide-${choice.value}`, !choice.checked);
+        const visibleCount = [...displayChoices].filter((item) => item.checked).length;
+        displaySummary.textContent = visibleCount === displayChoices.length ? 'All fields' : `${visibleCount} shown`;
+        updateRequiredDisplayChoices();
+      });
+    }
+
+    updateRequiredDisplayChoices();
   </script>
 </body>
 </html>

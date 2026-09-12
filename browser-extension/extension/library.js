@@ -1,6 +1,8 @@
 const BATCH = 50;
 const $ = id => document.getElementById(id);
 const records = new Map();
+// Storage keys, not checkbox state: render() replaces the result elements.
+const selected = new Set();
 const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
 let visible = BATCH;
 let searchTimer;
@@ -23,14 +25,37 @@ const node = (name, className, text) => {
 function result(entry) {
   const article = node('article', 'saved-item');
   const head = node('div', 'saved-item-head');
-  const identity = node('div');
+  const identity = node('div', 'saved-item-main');
   const title = String(entry.title ?? '').trim();
   const url = readableUrl(entry);
-  if (title) identity.append(node('h2', 'saved-item-title', title));
+  const key = KEY(entry.normUrl || normalize(entry.url || ''));
+
+  const select = node('label', 'checkbox-row saved-item-select');
+  const box = node('input');
+  box.type = 'checkbox';
+  box.checked = selected.has(key);
+  box.setAttribute('aria-label', `Select ${title || url}`);
+  box.addEventListener('change', () => {
+    if (box.checked) selected.add(key); else selected.delete(key);
+    syncForget();
+  });
+  select.append(box);
+
+  const heading = node('h2', 'saved-item-title');
+  const link = node('a');
+  link.href = entry.url || entry.normUrl;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('class', 'icon');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = '<use href="icons.svg#link"></use>';
+  link.append(node('span', '', title || url), icon);
+  heading.append(link);
   const urlEl = node('div', 'saved-item-url', url);
   urlEl.title = String(entry.normUrl || entry.url || '');
-  identity.append(urlEl);
-  head.append(identity, node('div', 'saved-item-date',
+  identity.append(heading, urlEl);
+  head.append(select, identity, node('div', 'saved-item-date',
     `Added ${formatDate(entry.savedAt)} · Modified ${formatDate(entry.updatedAt)}`));
   article.append(head);
 
@@ -40,7 +65,7 @@ function result(entry) {
   const note = String(entry.note ?? '').trim();
   if (note) {
     const noteEl = node('div', 'saved-item-note');
-    noteEl.append(node('strong', '', 'Note'), document.createTextNode(` ${note}`));
+    noteEl.append(node('strong', '', 'Note'), node('span', '', note));
     article.append(noteEl);
   }
 
@@ -75,10 +100,15 @@ function render() {
   $('loadArea').hidden = view.remaining === 0;
   $('loadMore').disabled = view.remaining === 0;
   $('remaining').textContent = `${shown.toLocaleString()} loaded · ${view.remaining.toLocaleString()} remaining`;
+  syncForget();
 }
 
+const syncForget = () => { $('forgetSelected').disabled = selected.size === 0; };
+
+// A new search or sort can hide selected records, so it starts a new selection.
 function resetAndRender() {
   visible = BATCH;
+  selected.clear();
   render();
 }
 
@@ -91,13 +121,47 @@ $('sortOrder').addEventListener('change', resetAndRender);
 $('loadMore').addEventListener('click', () => { visible += BATCH; render(); });
 $('options').addEventListener('click', () => browser.runtime.openOptionsPage());
 
+$('selectMode').addEventListener('click', () => {
+  const on = document.body.classList.toggle('select-mode');
+  $('selectMode').setAttribute('aria-pressed', String(on));
+  $('forgetSelected').hidden = !on;
+  selected.clear();
+  render();
+});
+
+// background.js repaints badges and onChanged below updates the list; this only removes.
+$('forgetSelected').addEventListener('click', async () => {
+  const keys = [...selected];
+  $('forgetSelected').disabled = true;
+  try { await browser.storage.local.remove(keys); } finally { selected.clear(); render(); }
+});
+
+// Display choices only hide fields with CSS. Search still reads every field.
+const choices = [...document.querySelectorAll('.display-option input')];
+const [titleChoice, urlChoice] = choices;
+for (const choice of choices) choice.addEventListener('change', () => {
+  if (!titleChoice.checked && !urlChoice.checked) choice.checked = true;
+  document.body.classList.toggle(`hide-${choice.value}`, !choice.checked);
+  const shown = choices.filter(c => c.checked).length;
+  $('displaySummary').textContent = shown === choices.length ? 'All fields' : `${shown} shown`;
+  titleChoice.disabled = !urlChoice.checked;
+  urlChoice.disabled = !titleChoice.checked;
+});
+addEventListener('click', event => {
+  if (!$('displayMenu').contains(event.target)) $('displayMenu').open = false;
+});
+
 addEventListener('keydown', event => {
+  if (event.key === 'Escape' && $('displayMenu').open) {
+    $('displayMenu').open = false;
+    $('displayMenu').querySelector('summary').focus();
+    return;
+  }
   if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 'k') return;
   event.preventDefault();
   $('search').focus();
   $('search').select();
 });
-$('searchShortcut').textContent = navigator.platform.startsWith('Mac') ? '⌘ K' : 'Ctrl K';
 
 // Changes already contain the new records, so an open library can refresh
 // without reading the complete storage area again.
@@ -106,7 +170,7 @@ const applyChanges = changes => {
   for (const [key, change] of Object.entries(changes)) {
     if (!key.startsWith('t:')) continue;
     relevant = true;
-    if (change.newValue === undefined) records.delete(key);
+    if (change.newValue === undefined) { records.delete(key); selected.delete(key); }
     else records.set(key, change.newValue);
   }
   return relevant;

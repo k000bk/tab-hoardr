@@ -12,48 +12,80 @@
     .library-heading { min-width: 0; }
     .library-title { font-size: 14px; font-weight: 600; }
     .library-count { margin-top: 1px; color: var(--text-faint); font-size: 12px; }
-    .library-header button { margin-left: auto; }
+    .library-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    #selectMode[aria-pressed="true"] { color: var(--accent-hover); box-shadow: inset 0 0 0 1px hsl(var(--accent-h) var(--accent-s) var(--accent-l) / .28); }
     .library-content { width: min(820px, 100%); margin: 0 auto; padding: 34px 28px 44px; }
     .library-content h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.02em; }
     .library-intro { margin: 0 0 22px; color: var(--text-muted); }
     .search-field { position: relative; }
     .search-field > .icon { position: absolute; top: 50%; left: 12px; width: 17px; height: 17px; transform: translateY(-50%); color: var(--text-faint); pointer-events: none; }
-    .search-field input { width: 100%; height: 40px; padding: 0 58px 0 38px; border: 1px solid var(--border); border-radius: var(--radius-m); outline: none; background: var(--background-primary); color: var(--text-normal); font-size: 14px; }
+    .search-field input { width: 100%; height: 40px; padding: 0 12px 0 38px; border: 1px solid var(--border); border-radius: var(--radius-m); outline: none; background: var(--background-primary); color: var(--text-normal); font-size: 14px; }
     .search-field input:hover { border-color: var(--border-hover); }
     .search-field input:focus { border-color: var(--border-focus); }
-    .search-shortcut { position: absolute; top: 50%; right: 10px; padding: 3px 6px; transform: translateY(-50%); border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-faint); font: 10px/1 var(--font-mono); pointer-events: none; }
     .library-tools { display: flex; min-height: 54px; align-items: center; gap: 8px; margin-top: 8px; }
     .results-summary { margin-right: auto; color: var(--text-muted); font-size: 12px; }
     .sort-label { color: var(--text-faint); font-size: 12px; }
     select { height: var(--input-height); padding: 0 28px 0 9px; border: 1px solid var(--border); border-radius: var(--radius-s); outline: none; background: var(--background-primary); box-shadow: var(--input-shadow); color: var(--text-normal); font: 12px var(--font-ui); cursor: pointer; }
     select:hover { border-color: var(--border-hover); box-shadow: var(--input-shadow-hover); }
     select:focus-visible { border-color: var(--border-focus); outline: 2px solid var(--accent); outline-offset: 2px; }
+    .display-menu { position: relative; }
+    .display-menu summary { list-style: none; }
+    .display-menu summary::-webkit-details-marker { display: none; }
+    .display-menu summary:hover { background: var(--interactive-hover); box-shadow: var(--input-shadow-hover); }
+    .display-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .display-menu summary .icon { width: 13px; height: 13px; transition: transform 120ms ease; }
+    .display-menu[open] summary .icon { transform: rotate(90deg); }
+    .display-options { position: absolute; z-index: 5; top: calc(100% + 5px); right: 0; width: 178px; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius-m); background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 4px 10px rgb(0 0 0 / .07), 0 16px 34px rgb(0 0 0 / .1); }
+    .display-option { gap: 8px; padding: 6px 7px; border-radius: var(--radius-s); font-size: 12px; }
+    .display-option:hover { background: var(--hover); color: var(--text-normal); }
+    .display-option:has(input:disabled), .display-option input:disabled { opacity: .5; cursor: not-allowed; }
+    .display-option:has(input:disabled):hover { background: transparent; color: var(--text-muted); }
     .saved-list { overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--background-primary-alt); }
-    .saved-item { padding: 18px 20px 17px; }
+    /* Flex gap only exists between visible children, so hidden fields leave no stray margins. */
+    .saved-item { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 17px; }
     .saved-item + .saved-item { border-top: 1px solid var(--border); }
     .saved-item:hover { background: var(--hover); }
     .saved-item-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 18px; }
-    .saved-item-head > div:first-child { min-width: 0; }
-    .saved-item-title { overflow: hidden; margin: 0 0 3px; color: var(--text-normal); font-size: 15px; font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
-    .saved-item-url { overflow: hidden; color: var(--text-faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .select-mode .saved-item-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .saved-item-select { display: none; padding-top: 2px; }
+    .select-mode .saved-item-select { display: flex; }
+    .saved-item-main { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 3px; }
+    .saved-item-title { max-width: 100%; margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; }
+    .saved-item-title a { display: flex; align-items: center; gap: 6px; color: var(--text-normal); text-decoration: none; }
+    .saved-item-title a:focus-visible { border-radius: 2px; outline: 2px solid var(--accent); outline-offset: 2px; }
+    .saved-item-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .saved-item-title .icon { width: 14px; height: 14px; opacity: 0; transition: opacity 120ms ease; }
+    .saved-item:hover .saved-item-title .icon, .saved-item-title a:focus-visible .icon { opacity: 1; }
+    .saved-item-url { overflow: hidden; max-width: 100%; color: var(--text-faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
     .saved-item-date { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
-    .saved-item-description { margin: 11px 0 8px; color: var(--text-muted); overflow-wrap: anywhere; }
-    .saved-item-note { margin: 0 0 10px; padding: 8px 10px; border-left: 2px solid hsl(var(--accent-h) var(--accent-s) var(--accent-l) / .45); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--accent-soft); color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
-    .saved-item-note strong { margin-right: 5px; color: var(--text-normal); font-weight: 600; }
+    .saved-item-description { margin: 0; color: var(--text-muted); overflow-wrap: anywhere; }
+    .saved-item-note { display: flex; gap: 5px; padding: 8px 10px; border-left: 2px solid hsl(var(--accent-h) var(--accent-s) var(--accent-l) / .45); border-radius: 0 var(--radius-s) var(--radius-s) 0; background: var(--accent-soft); color: var(--text-muted); font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .saved-item-note strong { color: var(--text-normal); font-weight: 600; }
+    .saved-item-note span { min-width: 0; }
     .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag { max-width: 100%; padding: 3px 7px; border: 1px solid var(--border); border-radius: 999px; background: var(--background-primary); color: var(--text-muted); font-size: 11px; overflow-wrap: anywhere; }
+    .tag { max-width: 100%; padding: 3px 6px; border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--background-secondary); color: var(--text-faint); font: 10px/1 var(--font-mono); overflow-wrap: anywhere; }
+    .hide-title .saved-item-title, .hide-url .saved-item-url, .hide-description .saved-item-description,
+    .hide-note .saved-item-note, .hide-tags .tag-list { display: none; }
     .library-load { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-top: 18px; color: var(--text-faint); font-size: 12px; }
     .library-load button { min-width: 132px; }
     .empty-state { padding: 54px 24px; text-align: center; }
     .empty-state strong { display: block; margin-bottom: 5px; font-size: 14px; }
     .empty-state span { color: var(--text-muted); font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      .display-options { background: #202020; box-shadow: 0 1px 2px rgb(0 0 0 / .12), 0 4px 10px rgb(0 0 0 / .18), 0 16px 34px rgb(0 0 0 / .24); }
+    }
     @media (max-width: 650px) {
-      .library-header { padding-inline: 14px; }
+      .library-header { padding: 9px 14px; }
+      .library-heading, .select-mode #options { display: none; }
+      .library-actions { gap: 6px; }
       .library-content { padding: 26px 14px 34px; }
       .library-tools { flex-wrap: wrap; padding-block: 9px; }
+      .display-options { right: auto; left: 0; }
       .results-summary { width: 100%; }
       .saved-item { padding: 15px 14px; }
       .saved-item-head { grid-template-columns: 1fr; gap: 5px; }
+      .select-mode .saved-item-head { grid-template-columns: auto minmax(0, 1fr); }
+      .select-mode .saved-item-date { grid-column: 2; }
       .saved-item-date { white-space: normal; }
     }
     @media (max-width: 430px) {
@@ -67,7 +99,11 @@
   <header class="library-header">
     <span class="app-logo" aria-hidden="true"><svg class="icon"><use href="icons.svg#stack"></use></svg></span>
     <div class="library-heading"><div class="library-title">Tab Hoardr</div><div class="library-count" id="libraryCount">Saved tabs</div></div>
-    <button id="options" type="button"><svg class="icon" aria-hidden="true"><use href="icons.svg#settings"></use></svg>Options</button>
+    <div class="library-actions">
+      <button id="selectMode" type="button" aria-pressed="false">Select mode</button>
+      <button id="forgetSelected" class="danger" type="button" hidden disabled><svg class="icon" aria-hidden="true"><use href="icons.svg#trash"></use></svg>Forget selected tabs</button>
+      <button id="options" type="button"><svg class="icon" aria-hidden="true"><use href="icons.svg#settings"></use></svg>Options</button>
+    </div>
   </header>
   <main class="library-content">
     <h1>Saved tabs</h1>
@@ -75,7 +111,6 @@
     <div class="search-field">
       <svg class="icon" aria-hidden="true"><use href="icons.svg#search"></use></svg>
       <input id="search" type="search" placeholder="Search titles, descriptions, notes and tags" aria-label="Search saved tabs" autocomplete="off" spellcheck="false">
-      <span class="search-shortcut" id="searchShortcut" aria-hidden="true">Ctrl K</span>
     </div>
     <div class="library-tools">
       <span class="results-summary" id="summary" role="status" aria-live="polite">Loading saved tabs…</span>
@@ -89,6 +124,17 @@
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
       </select>
+      <span class="sort-label">Display</span>
+      <details class="display-menu" id="displayMenu">
+        <summary class="button" aria-label="Display fields"><span id="displaySummary">All fields</span><svg class="icon" aria-hidden="true"><use href="icons.svg#chevron"></use></svg></summary>
+        <div class="display-options">
+          <label class="checkbox-row display-option"><input type="checkbox" value="title" checked>Title</label>
+          <label class="checkbox-row display-option"><input type="checkbox" value="url" checked>URL</label>
+          <label class="checkbox-row display-option"><input type="checkbox" value="description" checked>Meta description</label>
+          <label class="checkbox-row display-option"><input type="checkbox" value="note" checked>Note</label>
+          <label class="checkbox-row display-option"><input type="checkbox" value="tags" checked>Tags</label>
+        </div>
+      </details>
     </div>
     <section class="saved-list" id="results" aria-label="Saved tab results"></section>
     <div class="library-load" id="loadArea" hidden>
