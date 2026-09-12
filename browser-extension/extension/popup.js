@@ -100,6 +100,10 @@ $('forget').addEventListener('click', async () => {
   await refresh();
 });
 $('prefs').addEventListener('click', () => browser.runtime.openOptionsPage());
+$('library').addEventListener('click', async () => {
+  await browser.tabs.create({ url: browser.runtime.getURL('library.html') });
+  window.close();
+});
 
 // Weekly, cached, off the critical path — a failure (offline, rate limit) just
 // leaves the pill hidden.

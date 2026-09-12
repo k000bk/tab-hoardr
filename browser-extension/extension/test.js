@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { normalize, state, isNewer, restoreRecord, newEntry, content } = require('./lib.js');
+const { normalize, state, isNewer, restoreRecord, newEntry, content, savedTabView } = require('./lib.js');
 
 const same = (a, b) => assert.strictEqual(normalize(a), normalize(b), `${a} !== ${b}`);
 
@@ -54,8 +54,6 @@ assert.strictEqual(state(r), 'update');                   // 200 > 150
 // A never-exported entry survives the round trip as never-exported.
 assert.strictEqual(restoreRecord({ url: 'https://a.com', exportedAt: null }).exportedAt, null);
 
-console.log('ok');
-
 // A bulk-saved record must look exactly like an editor-saved one: unexported,
 // with the page's own title where the injection worked and the tab's when it did not.
 const bulk = newEntry({ url: 'https://www.Example.com/a/?utm_source=x', title: 'Tab title' }, null);
@@ -72,3 +70,51 @@ assert.strictEqual(state(hoarded), 'clean');
 assert.strictEqual(content({ ...hoarded, pinned: false }), content(hoarded));
 assert.notStrictEqual(content({ ...hoarded, note: 'N2' }), content(hoarded));
 assert.notStrictEqual(content({ ...hoarded, tags: ['a', 'b'] }), content(hoarded));
+
+// The library searches all exported content fields, regardless of case, and an
+// empty or space-only query keeps the complete collection.
+const saved = [
+  { normUrl: 'https://c.test', title: 'Alpha TITLE', description: '', note: '', tags: [], savedAt: 30, updatedAt: 10 },
+  { normUrl: 'https://a.test', title: 'One', description: 'Useful Description', note: '', tags: [], savedAt: 10, updatedAt: 30 },
+  { normUrl: 'https://b.test', title: 'Two', description: '', note: 'Private NOTE', tags: ['Design', 'UX'], savedAt: 20, updatedAt: 20 }
+];
+assert.deepStrictEqual(savedTabView(saved, 'alpha').items.map(e => e.normUrl), ['https://c.test']);
+assert.deepStrictEqual(savedTabView(saved, 'DESCRIPTION').items.map(e => e.normUrl), ['https://a.test']);
+assert.deepStrictEqual(savedTabView(saved, ' note ').items.map(e => e.normUrl), ['https://b.test']);
+assert.deepStrictEqual(savedTabView(saved, 'design').items.map(e => e.normUrl), ['https://b.test']);
+assert.strictEqual(savedTabView(saved, '   ').total, 3);
+assert.strictEqual(savedTabView(saved, 'missing').total, 0);
+assert.deepStrictEqual(savedTabView([], '').items, []);
+
+// Both date fields and directions have a known order. URLs give equal dates a
+// stable secondary order.
+assert.deepStrictEqual(savedTabView(saved, '', 'savedAt', 'newest').items.map(e => e.normUrl),
+  ['https://c.test', 'https://b.test', 'https://a.test']);
+assert.deepStrictEqual(savedTabView(saved, '', 'savedAt', 'oldest').items.map(e => e.normUrl),
+  ['https://a.test', 'https://b.test', 'https://c.test']);
+assert.deepStrictEqual(savedTabView(saved, '', 'updatedAt', 'newest').items.map(e => e.normUrl),
+  ['https://a.test', 'https://b.test', 'https://c.test']);
+assert.deepStrictEqual(savedTabView(saved, '', 'updatedAt', 'oldest').items.map(e => e.normUrl),
+  ['https://c.test', 'https://b.test', 'https://a.test']);
+const tied = saved.map(e => ({ ...e, savedAt: 1 }));
+assert.deepStrictEqual(savedTabView(tied).items.map(e => e.normUrl),
+  ['https://a.test', 'https://b.test', 'https://c.test']);
+
+// Only the requested batch reaches the page, while totals still cover every
+// matching item in the complete in-memory collection.
+const many = Array.from({ length: 121 }, (_, i) => ({
+  normUrl: `https://example.test/${String(i).padStart(3, '0')}`,
+  title: i < 115 ? 'match' : 'other', savedAt: i, updatedAt: i
+}));
+const first = savedTabView(many, 'match');
+assert.strictEqual(first.items.length, 50);
+assert.strictEqual(first.total, 115);
+assert.strictEqual(first.remaining, 65);
+const second = savedTabView(many, 'match', 'savedAt', 'newest', 100);
+assert.strictEqual(second.items.length, 100);
+assert.strictEqual(second.remaining, 15);
+const last = savedTabView(many, 'match', 'savedAt', 'newest', 150);
+assert.strictEqual(last.items.length, 115);
+assert.strictEqual(last.remaining, 0);
+
+console.log('ok');

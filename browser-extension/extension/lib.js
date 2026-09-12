@@ -37,6 +37,31 @@ const state = e => (!e.exportedAt ? 'new' : e.updatedAt > e.exportedAt ? 'update
 // already exported — put that tab straight back into the next export.
 const content = e => JSON.stringify([e.title, e.description, e.note, e.tags]);
 
+// The library keeps its full collection in memory, but gives the DOM only one
+// small slice. The URL is the tie-breaker because each saved URL has one key;
+// equal dates therefore keep the same order after each refresh.
+const savedTabView = (entries, query = '', sortBy = 'savedAt', order = 'newest', visible = 50) => {
+  const q = String(query).trim().toLowerCase();
+  const field = sortBy === 'updatedAt' ? 'updatedAt' : 'savedAt';
+  const direction = order === 'oldest' ? 1 : -1;
+  const text = e => [e?.title, e?.description, e?.note,
+    ...(Array.isArray(e?.tags) ? e.tags : [])]
+    .map(value => String(value ?? '').toLowerCase()).join('\n');
+  const stableKey = e => String(e?.normUrl || e?.url || '');
+  const matched = entries.filter(e => !q || text(e).includes(q)).sort((a, b) => {
+    const byDate = ((Number(a?.[field]) || 0) - (Number(b?.[field]) || 0)) * direction;
+    if (byDate) return byDate;
+    const A = stableKey(a), B = stableKey(b);
+    return A < B ? -1 : A > B ? 1 : 0;
+  });
+  const count = Math.max(0, Number(visible) || 0);
+  return {
+    items: matched.slice(0, count),
+    total: matched.length,
+    remaining: Math.max(0, matched.length - count)
+  };
+};
+
 // Numeric per dot-part, missing parts count as 0: 0.2.10 is newer than 0.2.9.
 const isNewer = (a, b) => {
   const A = a.split('.').map(Number), B = b.split('.').map(Number);
@@ -154,4 +179,4 @@ async function checkUpdate(force) {
   return result;
 }
 
-if (typeof module !== 'undefined') module.exports = { normalize, KEY, state, hoardable, isNewer, restoreRecord, newEntry, content };
+if (typeof module !== 'undefined') module.exports = { normalize, KEY, state, hoardable, isNewer, restoreRecord, newEntry, content, savedTabView };
